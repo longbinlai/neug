@@ -14,8 +14,8 @@ This example demonstrates how to use NeuG to store and simulate a complete fruit
 
 ```bash
 # Clone NeuG repository
-git clone https://github.com/alibaba/neug.git
-cd neug
+git clone https://github.com/longbinlai/neug.git
+cd neug && git checkout flywire_brain
 
 # Build with Python binding
 mkdir build && cd build
