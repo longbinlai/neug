@@ -126,3 +126,5 @@ endfunction()
 add_extension_if_enabled("json")
 
 message(STATUS "=== Extension configuration complete ===")
+# Add lif_sim extension for neural network simulation
+add_extension_if_enabled("lif_sim")
