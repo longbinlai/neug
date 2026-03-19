@@ -39,7 +39,7 @@ make -j$(nproc)
 
 ```bash
 # Download from OSS
-wget https://neug.oss-cn-hangzhou.aliyuncs.com/dataset/flywire_dataset.tar.gz
+wget https://neug.oss-cn-beijing.aliyuncs.com/datasets/flywire_dataset.tar.gz
 
 # Extract
 tar -xzvf flywire_dataset.tar.gz
