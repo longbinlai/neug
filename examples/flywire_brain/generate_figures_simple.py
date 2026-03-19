@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 生成 FlyWire 大脑模拟的可视化图表（使用预计算数据）
+
+Prerequisites:
+- Install matplotlib: pip install matplotlib numpy
 """
+
+import os
+import sys
+from pathlib import Path
 
 import matplotlib
 matplotlib.use('Agg')
@@ -9,7 +16,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 import numpy as np
-from pathlib import Path
 
 # 颜色方案
 COLORS = {
@@ -395,9 +401,10 @@ def plot_limitations_explanation(output_dir):
 
 
 def main():
-    output_dir = Path("/mnt/longbin/flywire/docs/figures")
+    # Use relative path or environment variable for output directory
+    output_dir = Path(os.environ.get("FLYWIRE_FIGURES_DIR", "./figures"))
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print("=" * 70)
     print("生成 FlyWire 大脑模拟可视化图表")
     print("=" * 70)

@@ -7,6 +7,9 @@ This script:
 2. Imports data from CSV files
 3. Verifies data integrity
 
+Prerequisites:
+- Install neug Python package: pip install -e /path/to/neug/tools/python_bind
+
 Usage:
     python import_to_neug.py [--data-dir DIR] [--db-path PATH]
 """
@@ -15,11 +18,6 @@ import argparse
 import os
 import sys
 from pathlib import Path
-
-# Add NeuG Python binding to path
-NEUG_PYTHON_BIND = "/mnt/longbin/flywire/neug/tools/python_bind"
-if NEUG_PYTHON_BIND not in sys.path:
-    sys.path.insert(0, NEUG_PYTHON_BIND)
 
 import neug
 
@@ -160,12 +158,12 @@ def verify_data(conn):
 
 def main():
     parser = argparse.ArgumentParser(description="Import FlyWire data into NeuG")
-    parser.add_argument("--data-dir", "-d", 
-                        default="/mnt/longbin/flywire/neug_import_strong",
-                        help="Data directory")
+    parser.add_argument("--data-dir", "-d",
+                        default="./flywire_dataset",
+                        help="Data directory (default: ./flywire_dataset)")
     parser.add_argument("--db-path", "-p",
-                        default="/mnt/longbin/flywire/flywire_db",
-                        help="Database path")
+                        default="./flywire_db",
+                        help="Database path (default: ./flywire_db)")
     parser.add_argument("--reset", "-r", action="store_true",
                         help="Reset database (delete existing)")
     

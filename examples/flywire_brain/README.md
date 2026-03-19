@@ -17,25 +17,78 @@ This example demonstrates how to use NeuG to store and simulate a complete fruit
 git clone https://github.com/longbinlai/neug.git
 cd neug && git checkout flywire_brain
 
-# Build with Python binding
+# Initialize submodules
+git submodule update --init --recursive
+
+# Build NeuG library
 mkdir build && cd build
 cmake .. -DBUILD_PYTHON_BIND=ON
 make -j$(nproc)
 ```
 
-### 2. Build lif_sim Extension
+### 2. Build and Install NeuG Python Wheel
 
 ```bash
-cd neug/extension/lif_sim
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
+# Set up environment (if you have a neug_env file)
+source ~/.neug_env 2>/dev/null || true
 
-# The extension will be at:
-# neug/tools/python_bind/build/lib.linux-x86_64-3.10/extension/lif_sim/liblif_sim.neug_extension
+# Navigate to Python binding directory
+cd neug/tools/python_bind
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Build and install in development mode
+pip install -e .
 ```
 
-### 3. Download Dataset
+After installation, verify it works:
+
+```bash
+python3 -c "import neug; print(f'NeuG version: {neug.__version__}')"
+```
+
+### 3. Build lif_sim Extension
+
+The lif_sim extension is built as part of the main NeuG build:
+
+```bash
+cd neug/build
+make neug_lif_sim_extension -j$(nproc)
+```
+
+After building, copy the extension to the Python binding build directory:
+
+```bash
+# Create extension directory in python_bind build
+mkdir -p neug/tools/python_bind/build/lib.<platform-specific>/extension/lif_sim
+
+# Copy the extension library
+cp neug/build/extension/lif_sim/liblif_sim.neug_extension \
+   neug/tools/python_bind/build/lib.<platform-specific>/extension/lif_sim/
+
+# On macOS, you may also need to copy dependent libraries:
+mkdir -p neug/tools/python_bind/build/lib.<platform-specific>/neug/.dylibs
+cp neug/build/third_party/mimalloc/libmimalloc.*.dylib \
+   neug/tools/python_bind/build/lib.<platform-specific>/neug/.dylibs/
+```
+
+To find the correct platform-specific build directory:
+
+```bash
+# Find the build directory
+find neug/tools/python_bind/build -type d -name "lib.*" | head -1
+```
+
+### 4. Install Additional Dependencies
+
+For generating figures, install matplotlib:
+
+```bash
+pip install matplotlib numpy
+```
+
+### 5. Download Dataset
 
 ```bash
 # Download from OSS
@@ -64,15 +117,28 @@ This will:
 
 ### Step 2: Run LIF Simulation
 
+Before running the simulation, ensure:
+1. The NeuG Python package is installed (see Prerequisites section)
+2. The lif_sim extension is built
+
+To run the simulation:
+
 ```bash
 python flywire_demo_simple.py
 ```
 
 This will:
-- Load the lif_sim extension
+- Load the lif_sim extension (automatically found from the build directory)
 - Stimulate sugar-sensing neurons
 - Run LIF simulation for 20 rounds
 - Report the number of neurons that spiked
+
+**Note:** The extension is loaded using `LOAD lif_sim;` which searches for the extension library in the build directory. If you encounter issues loading the extension, verify the extension library exists:
+
+```bash
+# Check if the extension library exists
+find neug/tools/python_bind/build -name "liblif_sim.neug_extension"
+```
 
 ### Step 3: Analyze Results
 

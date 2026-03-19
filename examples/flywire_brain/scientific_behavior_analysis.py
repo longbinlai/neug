@@ -18,16 +18,17 @@
    - 不做过度声称
    - 说明限制
    - 与论文方法对比
+
+Prerequisites:
+- Install neug Python package: pip install -e /path/to/neug/tools/python_bind
+- Build lif_sim extension: cd neug/extension/lif_sim && mkdir build && cd build && cmake .. && make
 """
 
+import os
 import sys
-
-NEUG_PYTHON_BIND = "/mnt/longbin/flywire/neug/tools/python_bind"
-if NEUG_PYTHON_BIND not in sys.path:
-    sys.path.insert(0, NEUG_PYTHON_BIND)
+from collections import defaultdict
 
 import neug
-from collections import defaultdict
 
 
 def get_motor_neurons(conn):
@@ -117,8 +118,9 @@ def analyze_pathway(conn, sensory_ids, motor_ids):
 
 
 def main():
-    db_path = "/mnt/longbin/flywire/flywire_db"
-    
+    # Use relative path or environment variable for database path
+    db_path = os.environ.get("FLYWIRE_DB_PATH", "./flywire_db")
+
     print("=" * 70)
     print("科学的行为预测方法")
     print("=" * 70)

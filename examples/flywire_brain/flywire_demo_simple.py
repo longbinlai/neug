@@ -6,15 +6,15 @@ This script demonstrates:
 1. NeuG as the single source of truth for brain data
 2. LIF neural simulation via lif_sim extension
 3. Signal propagation through the connectome
+
+Prerequisites:
+- Install neug Python package: pip install -e /path/to/neug/tools/python_bind
+- Build lif_sim extension: cd neug/extension/lif_sim && mkdir build && cd build && cmake .. && make
 """
 
+import os
 import sys
 from pathlib import Path
-
-# Add NeuG Python binding to path
-NEUG_PYTHON_BIND = "/mnt/longbin/flywire/neug/tools/python_bind"
-if NEUG_PYTHON_BIND not in sys.path:
-    sys.path.insert(0, NEUG_PYTHON_BIND)
 
 import neug
 
@@ -83,8 +83,9 @@ def run_experiment(conn, neuron_type, stimulus_mv=20.0, max_rounds=20):
 
 
 def main():
-    db_path = "/mnt/longbin/flywire/flywire_db"
-    
+    # Use relative path or environment variable for database path
+    db_path = os.environ.get("FLYWIRE_DB_PATH", "./flywire_db")
+
     print("=" * 70)
     print("FlyWire Brain Simulation Demo")
     print("NeuG + lif_sim Extension")
