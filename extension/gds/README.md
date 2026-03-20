@@ -54,8 +54,12 @@ pip install neug
 ### 1. 克隆代码
 
 ```bash
-git clone https://github.com/alibaba/neug.git
+# 克隆仓库
+git clone https://github.com/longbinlai/neug.git
 cd neug
+
+# 切换到 GDS 扩展分支
+git checkout demo/cc-ext
 ```
 
 ### 2. 编译 NeuG Wheel 包
@@ -568,4 +572,5 @@ conn.execute("MATCH (a), (b) CREATE (a)-[:KNOWS]->(b), (b)-[:KNOWS]->(a);")
 
 - [NeuG 文档](https://graphscope.io/neug/)
 - [LDBC Graphalytics](https://ldbcouncil.org/benchmarks/graphalytics/)
-- [GitHub Issues](https://github.com/alibaba/neug/issues)
+- [GitHub 仓库](https://github.com/longbinlai/neug/tree/demo/cc-ext)
+- [GDS 扩展源码](https://github.com/longbinlai/neug/tree/demo/cc-ext/extension/gds)
