@@ -125,4 +125,7 @@ endfunction()
 # Add json extension
 add_extension_if_enabled("json")
 
+# Add gds extension
+add_extension_if_enabled("gds")
+
 message(STATUS "=== Extension configuration complete ===")
