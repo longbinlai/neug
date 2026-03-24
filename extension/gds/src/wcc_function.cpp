@@ -50,16 +50,21 @@ class AtomicUnionFind {
     }
   }
 
-  // Find with path compression (not fully parallel, but works well in practice)
+  // Find with iterative path compression (avoids stack overflow on large graphs)
   size_t find(size_t x) {
-    size_t parent = parent_[x].load(std::memory_order_relaxed);
-    if (parent == x) {
-      return x;
+    // Find root iteratively
+    size_t root = x;
+    while (true) {
+      size_t parent = parent_[root].load(std::memory_order_relaxed);
+      if (parent == root) break;
+      root = parent;
     }
-    // Path compression
-    size_t root = find(parent);
-    if (parent != root) {
+    // Path compression: point all nodes on the path directly to root
+    while (true) {
+      size_t parent = parent_[x].load(std::memory_order_relaxed);
+      if (parent == root) break;
       parent_[x].compare_exchange_weak(parent, root, std::memory_order_relaxed);
+      x = parent;
     }
     return root;
   }
@@ -241,9 +246,8 @@ static execution::Context executeWCC(
     };
 
     // Process incoming edges for undirected semantics
+    // Note: for same-label edges, outgoing traversal above already covers both directions via unite
     auto process_incoming = [&](size_t start, size_t end) {
-      if (src_label == dst_label) return;  // Skip if same label
-      
       auto in_view = reader->GetGenericIncomingGraphView(dst_label, src_label, edge_label);
       const auto& dst_vertices = vertices_by_label[dst_label];
       
@@ -283,7 +287,7 @@ static execution::Context executeWCC(
       }
       
       // Process incoming edges in parallel
-      if (src_label != dst_label) {
+      {
         const auto& dst_vertices = vertices_by_label[dst_label];
         size_t num_dst_vertices = dst_vertices.size();
         chunk_size = (num_dst_vertices + num_threads - 1) / num_threads;
@@ -304,8 +308,8 @@ static execution::Context executeWCC(
     } else {
       // Sequential processing
       process_vertices(0, num_src_vertices);
-      
-      if (src_label != dst_label) {
+
+      {
         const auto& dst_vertices = vertices_by_label[dst_label];
         process_incoming(0, dst_vertices.size());
       }
@@ -337,8 +341,8 @@ static execution::Context executeWCC(
       component_id = it->second;
     }
 
-    Property external_id = reader->GetVertexId(all_vertices[i].first, all_vertices[i].second);
-    node_builder.push_back_opt(external_id.as_int64());
+    // Use internal 0-based index as node ID to support STRING primary keys
+    node_builder.push_back_opt(static_cast<int64_t>(i));
     component_builder.push_back_opt(component_id);
   }
 
