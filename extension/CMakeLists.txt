@@ -124,6 +124,8 @@ endfunction()
 
 # Add json extension
 add_extension_if_enabled("json")
+# Add parquet extension
+add_extension_if_enabled("parquet")
 
 # Add gds extension
 add_extension_if_enabled("gds")

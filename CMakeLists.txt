@@ -33,7 +33,6 @@ project (
 
 option(BUILD_TEST "Whether to build test" OFF)
 option(BUILD_DOC "Whether to build doc" OFF)
-option(BUILD_ODPS_FRAGMENT_LOADER "Whether to build odps fragment loader" OFF)
 option(OPTIMIZE_FOR_HOST "Whether to optimize on host" ON) # Whether to build optimized code on host
 option(BUILD_EXECUTABLES "When to build executors" OFF) # Whether to build executables, default is OFF
 option(BUILD_HTTP_SERVER "Whether to build http server" OFF) # Whether to build http server, default is OFF
@@ -75,7 +74,6 @@ option(ENABLE_LTO "Enable Link-Time Optimization" FALSE)
 option(AUTO_UPDATE_GRAMMAR "Automatically regenerate C++ grammar files on change." FALSE)
 option(BUILD_EXTENSIONS "Semicolon-separated list of extensions to build." "")
 option(BUILD_SINGLE_FILE_HEADER "Build single file header. Requires Python >= 3.9." FALSE)
-option(BUILD_TEST "Build C++ tests." TRUE)
 option(ENABLE_BACKTRACES "Enable backtrace printing for exceptions and segfaults" FALSE)
 option(BUILD_EXAMPLES "Build examples." ON)
 option(ENABLE_GCOV "Enable gcov (debug mode only)" FALSE)
@@ -400,11 +398,9 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 
-
 #print options
 message(STATUS "Build test: ${BUILD_TEST}")
 message(STATUS "Build doc: ${BUILD_DOC}")
-message(STATUS "Build odps fragment loader: ${BUILD_ODPS_FRAGMENT_LOADER}")
 
 # ------------------------------------------------------------------------------
 # cmake configs
@@ -593,6 +589,12 @@ if(BUILD_EXTENSIONS AND "json" IN_LIST BUILD_EXTENSIONS)
     message(STATUS "Arrow JSON support enabled for json extension")
 endif()
 
+# Configure Arrow Parquet support if parquet extension is enabled
+if(BUILD_EXTENSIONS AND "parquet" IN_LIST BUILD_EXTENSIONS)
+    set(ARROW_ENABLE_PARQUET ON CACHE BOOL "" FORCE)
+    message(STATUS "Arrow Parquet support enabled for parquet extension")
+endif()
+
 set(NEUG_USE_SYSTEM_ARROW OFF)
 if(DEFINED ENV{CI} AND "$ENV{CI}" STREQUAL "ON")
     set(NEUG_USE_SYSTEM_ARROW ON)
@@ -719,9 +721,6 @@ add_definitions(-DRAPIDJSON_HAS_CXX11_RVALUE_REFS=1)
 add_definitions(-DRAPIDJSON_HAS_CXX11_RANGE_FOR=1)
 add_compile_definitions(CPPHTTPLIB_OPENSSL_SUPPORT)
 
-if (BUILD_ODPS_FRAGMENT_LOADER)
-    include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/third_party/odps/include)
-endif()
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/third_party/flat_hash_map)
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/third_party/parallel-hashmap)
 
@@ -960,9 +959,6 @@ install(FILES ${PROJECT_SOURCE_DIR}/third_party/fast_float/include/fast_float.h
             DESTINATION include/
 )
 
-install(FILES ${PROJECT_SOURCE_DIR}/third_party/fast_float/include/fast_float.h
-            DESTINATION include/
-)
 
 
 if (WITH_MIMALLOC)
