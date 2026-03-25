@@ -46,6 +46,7 @@ function_set ProjectGraphFunction::getFunctionSet() {
     
     // Parse the physical plan to extract graph name and entries
     const auto& opr = plan.plan(op_idx);
+    (void)opr;
     // The actual parsing would require access to the expression evaluator
     // For now, we'll set a default graph name
     input->graphName = "projected_graph";

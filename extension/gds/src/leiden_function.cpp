@@ -165,7 +165,6 @@ static execution::Context executeLeiden(
   }
   total_edges /= 2;  // Each edge counted twice
 
-  double m = static_cast<double>(total_edges);
 
   // Initialize communities (each node in its own community)
   std::vector<int64_t> community(num_vertices);
