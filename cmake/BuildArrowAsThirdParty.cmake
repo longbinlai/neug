@@ -161,6 +161,24 @@ function(build_arrow_as_third_party)
                 message(STATUS "Patched Arrow ThirdpartyToolchain.cmake for CMake 4.x compatibility")
             endif()
         endif()
+        # Patch BuildUtils.cmake: fix libtool version regex for newer macOS/Xcode
+        # where /usr/bin/libtool -V outputs "cctools_ld-XXXX" instead of "cctools-XXXX"
+        foreach(_build_utils
+            "${arrow_SOURCE_DIR}/cpp/cmake_modules/BuildUtils.cmake"
+            "${arrow_SOURCE_DIR}/python/cmake_modules/BuildUtils.cmake")
+            if(EXISTS "${_build_utils}")
+                file(READ "${_build_utils}" _bu_content)
+                string(FIND "${_bu_content}" "cctools[-_]" _bu_already_patched)
+                if(_bu_already_patched EQUAL -1)
+                    string(REPLACE
+                        ".*cctools-([0-9.]+).*"
+                        ".*cctools[-_]([a-zA-Z0-9._]+).*"
+                        _bu_content "${_bu_content}")
+                    file(WRITE "${_build_utils}" "${_bu_content}")
+                    message(STATUS "Patched Arrow BuildUtils.cmake libtool regex: ${_build_utils}")
+                endif()
+            endif()
+        endforeach()
         add_subdirectory(${arrow_SOURCE_DIR}/cpp ${arrow_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif()
 
