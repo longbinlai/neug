@@ -54,7 +54,10 @@ namespace function {
 // Helper functions for parsing pattern JSON
 // ============================================================================
 
-// Helper function to parse comparison operator
+// Helper function to parse comparison operator. Unknown operator strings
+// (e.g. "and", "or", "like") fall back to COMP_EQUAL — flag the fallback so
+// users notice instead of silently getting equality semantics. Dedup by op
+// string so a typo'd operator only warns once per process.
 inline CompType ParseOperator(const std::string& op) {
     if (op == "=" || op == "==") return CompType::COMP_EQUAL;
     if (op == ">") return CompType::COMP_GREATER;
@@ -63,7 +66,21 @@ inline CompType ParseOperator(const std::string& op) {
     if (op == "<=") return CompType::COMP_LESS_EQUAL;
     if (op == "in") return CompType::COMP_IN;
     if (op == "not_in") return CompType::COMP_NOT_IN;
-    return CompType::COMP_EQUAL; // default
+
+    static std::mutex op_warn_mu;
+    static std::unordered_set<std::string> op_warn_seen;
+    bool fresh = false;
+    {
+        std::lock_guard<std::mutex> lk(op_warn_mu);
+        fresh = op_warn_seen.insert(op).second;
+    }
+    if (fresh) {
+        LOG(WARNING) << "[SAMPLED_MATCH] Unknown constraint operator '"
+                     << op << "'; falling back to '=' (COMP_EQUAL). "
+                     << "Boolean combinators like 'and'/'or' are not supported — "
+                     << "constraints in an array are AND-combined implicitly.";
+    }
+    return CompType::COMP_EQUAL;
 }
 
 // Helper function to create Value from rapidjson
@@ -664,32 +681,36 @@ class SampledSubgraphMatcher {
         // Read file content
         std::ifstream fin(pattern_file);
         if (!fin.is_open()) {
-            std::cerr << "Error: Cannot open pattern file: " << pattern_file << std::endl;
+            LOG(WARNING) << "[SAMPLED_MATCH] Cannot open pattern file: " << pattern_file;
             return nullptr;
         }
-        
+
         std::stringstream buffer;
         buffer << fin.rdbuf();
         std::string json_content = buffer.str();
         fin.close();
-        
+
         // Parse JSON
         rapidjson::Document doc;
         if (doc.Parse(json_content.c_str()).HasParseError()) {
-            std::cerr << "Error parsing JSON: " << rapidjson::GetParseError_En(doc.GetParseError()) 
-                      << " at offset " << doc.GetErrorOffset() << std::endl;
+            LOG(WARNING) << "[SAMPLED_MATCH] JSON parse error in pattern file '"
+                         << pattern_file << "': "
+                         << rapidjson::GetParseError_En(doc.GetParseError())
+                         << " at offset " << doc.GetErrorOffset();
             return nullptr;
         }
-        
+
         auto pattern = std::make_unique<GraphLib::SubgraphMatching::PatternGraph>();
-        
+
         // Parse vertices
         if (!doc.HasMember("vertices") || !doc["vertices"].IsArray()) {
-            std::cerr << "Error: JSON must have 'vertices' array" << std::endl;
+            LOG(WARNING) << "[SAMPLED_MATCH] Pattern JSON missing 'vertices' array: "
+                         << pattern_file;
             return nullptr;
         }
         if (!doc.HasMember("edges") || !doc["edges"].IsArray()) {
-            std::cerr << "Error: JSON must have 'edges' array" << std::endl;
+            LOG(WARNING) << "[SAMPLED_MATCH] Pattern JSON missing 'edges' array: "
+                         << pattern_file;
             return nullptr;
         }
         
@@ -723,13 +744,14 @@ class SampledSubgraphMatcher {
             } else if (vertex["id"].IsString()) {
                 id = std::stoi(vertex["id"].GetString());
             } else {
-                std::cerr << "Error: vertex 'id' must be int or string" << std::endl;
+                LOG(WARNING) << "[SAMPLED_MATCH] Pattern vertex 'id' must be int or string";
                 return nullptr;
             }
             std::string label = vertex["label"].GetString();
-            
+
             if (!schema.contains_vertex_label(label)) {
-                std::cerr << "Error: vertex label '" << label << "' not found in schema" << std::endl;
+                LOG(WARNING) << "[SAMPLED_MATCH] Pattern vertex label '" << label
+                             << "' not found in schema; aborting pattern load";
                 return nullptr;
             }
             pattern->vertex_label[id] = schema.get_vertex_label_id(label);
@@ -761,7 +783,7 @@ class SampledSubgraphMatcher {
             } else if (edge["source"].IsString()) {
                 src = std::stoi(edge["source"].GetString());
             } else {
-                std::cerr << "Error: edge 'source' must be int or string" << std::endl;
+                LOG(WARNING) << "[SAMPLED_MATCH] Pattern edge 'source' must be int or string";
                 return nullptr;
             }
             if (edge["target"].IsInt()) {
@@ -769,18 +791,19 @@ class SampledSubgraphMatcher {
             } else if (edge["target"].IsString()) {
                 dst = std::stoi(edge["target"].GetString());
             } else {
-                std::cerr << "Error: edge 'target' must be int or string" << std::endl;
+                LOG(WARNING) << "[SAMPLED_MATCH] Pattern edge 'target' must be int or string";
                 return nullptr;
             }
-            
+
             std::string edge_type = "";
             if (edge.HasMember("label") && edge["label"].IsString()) {
                 edge_type = edge["label"].GetString();
             }
-            
+
             if (!edge_type.empty()) {
                 if (!schema.contains_edge_label(edge_type)) {
-                    std::cerr << "Error: edge label '" << edge_type << "' not found in schema" << std::endl;
+                    LOG(WARNING) << "[SAMPLED_MATCH] Pattern edge label '" << edge_type
+                                 << "' not found in schema; aborting pattern load";
                     return nullptr;
                 }
                 pattern->edge_label[edge_idx] = schema.get_edge_label_id(edge_type);

@@ -30,9 +30,12 @@
 #include "sampled_match_data_graph_meta.h"
 #include "sampled_match_value.h"  // Value with comparison operators (>, <, >=, <=)
 #include <algorithm>
-#include <vector>
-#include <unordered_set>
+#include <mutex>
 #include <string>
+#include <unordered_set>
+#include <vector>
+
+#include <glog/logging.h>
 
 // Use types from neug namespace
 using neug::function::DataGraphMeta;
@@ -49,6 +52,26 @@ using Value = neug::execution::Value;
 
 namespace GraphLib {
 namespace SubgraphMatching {
+
+    // Dedupes "constraint references unknown property" warnings so a typo'd
+    // property name doesn't spam the log on every candidate vertex/edge.
+    // Keyed by "v:<label>:<prop>" (vertex) or "e:<src>:<dst>:<label>:<prop>"
+    // (edge). Survives across SAMPLED_MATCH invocations on purpose — the same
+    // typo is only worth flagging once per process.
+    inline void WarnUnknownConstraintPropertyOnce(const std::string& key,
+                                                  const std::string& message) {
+        static std::mutex mu;
+        static std::unordered_set<std::string> seen;
+        bool fresh = false;
+        {
+            std::lock_guard<std::mutex> lk(mu);
+            fresh = seen.insert(key).second;
+        }
+        if (fresh) {
+            LOG(WARNING) << message;
+        }
+    }
+
     enum STRUCTURE_FILTER {
         NO_STRUCTURE_FILTER,
         TRIANGLE_SAFETY,
@@ -902,18 +925,33 @@ namespace SubgraphMatching {
         for (const auto& constraint : constraints) {
             // Skip constraints with empty property name
             if (constraint._prop_name.empty()) {
+                WarnUnknownConstraintPropertyOnce(
+                    "v:empty",
+                    "[SAMPLED_MATCH] Vertex constraint has empty property name; "
+                    "constraint silently skipped.");
                 continue;
             }
-            
+
             // Find property name index
             auto it = std::find(prop_names.begin(), prop_names.end(), constraint._prop_name);
             if (it == prop_names.end()) {
-                // Property not found, skip this constraint
+                // Property not found on this vertex label. Skip this constraint
+                // and warn once per (label, property) pair so users notice typos
+                // rather than getting silently-wrong (over-broad) candidate sets.
+                std::ostringstream key;
+                key << "v:" << static_cast<int>(data_label) << ":" << constraint._prop_name;
+                std::ostringstream msg;
+                msg << "[SAMPLED_MATCH] Vertex constraint property '"
+                    << constraint._prop_name
+                    << "' not found on vertex label id "
+                    << static_cast<int>(data_label)
+                    << "; constraint silently skipped.";
+                WarnUnknownConstraintPropertyOnce(key.str(), msg.str());
                 continue;
             }
-            
+
             int prop_idx = std::distance(prop_names.begin(), it);
-            
+
             // Get property value from graph
             neug::Property data_prop = graph_.GetVertexProperty(data_label, data_vid, prop_idx);
             Value data_value = neug::execution::property_to_value(data_prop);
@@ -958,8 +996,26 @@ namespace SubgraphMatching {
         const auto& schema = graph_.schema();
         std::vector<std::string> prop_names = schema.get_edge_property_names(src_label, dst_label, edge_label);
         
-        // If no properties defined for this edge type, skip property checks
+        // If no properties defined for this edge type, skip property checks.
+        // Warn once per (src,dst,label,prop) so callers see they wrote a
+        // constraint that can never match (e.g. constraint on an edge type
+        // that has no properties at all).
         if (prop_names.empty()) {
+            for (const auto& constraint : constraints) {
+                std::ostringstream key;
+                key << "e:no_props:" << static_cast<int>(src_label)
+                    << ":" << static_cast<int>(dst_label)
+                    << ":" << static_cast<int>(edge_label)
+                    << ":" << constraint._prop_name;
+                std::ostringstream msg;
+                msg << "[SAMPLED_MATCH] Edge type ("
+                    << static_cast<int>(src_label) << "->"
+                    << static_cast<int>(dst_label) << ", label "
+                    << static_cast<int>(edge_label)
+                    << ") has no properties, but constraint references '"
+                    << constraint._prop_name << "'; constraint silently skipped.";
+                WarnUnknownConstraintPropertyOnce(key.str(), msg.str());
+            }
             return true;
         }
         
@@ -970,16 +1026,35 @@ namespace SubgraphMatching {
             for (const auto& constraint : constraints) {
                 // Skip constraints with empty property name
                 if (constraint._prop_name.empty()) {
+                    WarnUnknownConstraintPropertyOnce(
+                        "e:empty",
+                        "[SAMPLED_MATCH] Edge constraint has empty property name; "
+                        "constraint silently skipped.");
                     continue;
                 }
-                
+
                 // Find property name index
                 auto it = std::find(prop_names.begin(), prop_names.end(), constraint._prop_name);
                 if (it == prop_names.end()) {
-                    // Property not found, skip this constraint
+                    // Property not found on this edge type. Skip and warn once
+                    // per (src_label, dst_label, edge_label, prop) tuple.
+                    std::ostringstream key;
+                    key << "e:" << static_cast<int>(src_label)
+                        << ":" << static_cast<int>(dst_label)
+                        << ":" << static_cast<int>(edge_label)
+                        << ":" << constraint._prop_name;
+                    std::ostringstream msg;
+                    msg << "[SAMPLED_MATCH] Edge constraint property '"
+                        << constraint._prop_name
+                        << "' not found on edge type ("
+                        << static_cast<int>(src_label) << "->"
+                        << static_cast<int>(dst_label) << ", label "
+                        << static_cast<int>(edge_label)
+                        << "); constraint silently skipped.";
+                    WarnUnknownConstraintPropertyOnce(key.str(), msg.str());
                     continue;
                 }
-                
+
                 int prop_idx = std::distance(prop_names.begin(), it);
                 
                 // Get EdgeDataAccessor
@@ -1037,8 +1112,18 @@ namespace SubgraphMatching {
                 return data_value <= constraint_value;
             case CompType::COMP_IN:
             case CompType::COMP_NOT_IN:
+                WarnUnknownConstraintPropertyOnce(
+                    "op:in_not_in",
+                    "[SAMPLED_MATCH] Constraint operators 'in' / 'not_in' are "
+                    "accepted by the parser but not implemented at runtime; "
+                    "they currently behave as a no-op (always true).");
+                return true;
             default:
-                return true; // 不支持的比较类型，默认返回true
+                WarnUnknownConstraintPropertyOnce(
+                    "op:unknown_runtime",
+                    "[SAMPLED_MATCH] Unsupported comparison operator hit at "
+                    "runtime; treating as no-op (always true).");
+                return true;
         }
     }
 

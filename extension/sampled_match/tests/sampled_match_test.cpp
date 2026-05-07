@@ -24,7 +24,9 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #if defined(__APPLE__)
@@ -63,6 +65,20 @@ std::string FindBuildRoot() {
   return "";
 }
 
+// Allocate a unique scratch directory under the system temp dir. Using
+// mkdtemp avoids races between concurrently-running tests and never touches
+// the current working directory.
+std::filesystem::path MakeUniqueTempDir() {
+  auto tmpl =
+      (std::filesystem::temp_directory_path() / "neug_sampled_match_XXXXXX")
+          .string();
+  std::vector<char> buf(tmpl.begin(), tmpl.end());
+  buf.push_back('\0');
+  if (mkdtemp(buf.data()) == nullptr) return {};
+  return std::filesystem::path(buf.data());
+}
+
+// Triangle pattern reused across the basic tests.
 constexpr const char* kTrianglePattern = R"({
   "vertices": [
     {"id": 0, "label": "Person"},
@@ -76,18 +92,17 @@ constexpr const char* kTrianglePattern = R"({
   ]
 })";
 
-// Allocate a unique scratch directory under the system temp dir. Using
-// mkdtemp avoids races between concurrently-running tests and never touches
-// the current working directory.
-std::filesystem::path MakeUniqueTempDir() {
-  auto tmpl =
-      (std::filesystem::temp_directory_path() / "neug_sampled_match_XXXXXX")
-          .string();
-  std::vector<char> buf(tmpl.begin(), tmpl.end());
-  buf.push_back('\0');
-  if (mkdtemp(buf.data()) == nullptr) return {};
-  return std::filesystem::path(buf.data());
-}
+// Single Person -> Person edge — used by tests that only need one vertex /
+// edge under inspection (constraint, type mismatch, etc.).
+constexpr const char* kSingleEdgePattern = R"({
+  "vertices": [
+    {"id": 0, "label": "Person"},
+    {"id": 1, "label": "Person"}
+  ],
+  "edges": [
+    {"source": 0, "target": 1, "label": "person_knows_person"}
+  ]
+})";
 
 }  // namespace
 
@@ -111,25 +126,70 @@ class SampledMatchTest : public ::testing::Test {
     conn_ = db_->Connect();
     ASSERT_TRUE(conn_);
 
-    // Schema: a single Person node label and a single knows edge label.
-    // Data: a 3-node directed triangle (0->1, 1->2, 2->0).
+    // Schema: two node labels (Person, Company) and two edge labels with
+    // typed properties — this gives the corner-case tests room to exercise
+    // unknown labels, unknown properties, type-mismatch on int/string, and
+    // edge property constraints.
+    //
+    // Data layout (id/name/age):
+    //   Person(0, 'Alice', 20)
+    //   Person(1, 'Bob',   30)
+    //   Person(2, 'Carol', 20)
+    //   Person(3, 'Dave',  40)
+    //   Company(0, 'Acme')
+    //   Company(1, 'Globex')
+    //
+    // Edges (person_knows_person, weight DOUBLE):
+    //   0 -> 1 (0.5), 1 -> 2 (1.5), 2 -> 0 (0.5)        -- the original triangle
+    //   0 -> 3 (2.5), 3 -> 1 (0.5)                       -- extends to a "Y"
+    //
+    // Edges (person_works_at_company, since INT32):
+    //   0 -> Acme  (2020),  1 -> Acme  (2018)
+    //   2 -> Globex(2019),  3 -> Globex(2021)
     const std::pair<std::string, std::string> setup_queries[] = {
         {"schema: Person",
-         "CREATE NODE TABLE Person(id INT32 PRIMARY KEY, name STRING);"},
+         "CREATE NODE TABLE Person(id INT32 PRIMARY KEY, name STRING, age INT32);"},
+        {"schema: Company",
+         "CREATE NODE TABLE Company(id INT32 PRIMARY KEY, name STRING);"},
         {"schema: knows",
-         "CREATE REL TABLE person_knows_person(FROM Person TO Person);"},
-        {"insert p0", "CREATE (n:Person {id: 0, name: 'A'})"},
-        {"insert p1", "CREATE (n:Person {id: 1, name: 'B'})"},
-        {"insert p2", "CREATE (n:Person {id: 2, name: 'C'})"},
-        {"edge 0->1",
+         "CREATE REL TABLE person_knows_person("
+         "FROM Person TO Person, weight DOUBLE);"},
+        {"schema: works_at",
+         "CREATE REL TABLE person_works_at_company("
+         "FROM Person TO Company, since INT32);"},
+        {"insert p0", "CREATE (n:Person {id: 0, name: 'Alice', age: 20})"},
+        {"insert p1", "CREATE (n:Person {id: 1, name: 'Bob',   age: 30})"},
+        {"insert p2", "CREATE (n:Person {id: 2, name: 'Carol', age: 20})"},
+        {"insert p3", "CREATE (n:Person {id: 3, name: 'Dave',  age: 40})"},
+        {"insert c0", "CREATE (n:Company {id: 0, name: 'Acme'})"},
+        {"insert c1", "CREATE (n:Company {id: 1, name: 'Globex'})"},
+        {"edge 0->1 (0.5)",
          "MATCH (a:Person), (b:Person) WHERE a.id = 0 AND b.id = 1 "
-         "CREATE (a)-[:person_knows_person]->(b)"},
-        {"edge 1->2",
+         "CREATE (a)-[:person_knows_person {weight: 0.5}]->(b)"},
+        {"edge 1->2 (1.5)",
          "MATCH (a:Person), (b:Person) WHERE a.id = 1 AND b.id = 2 "
-         "CREATE (a)-[:person_knows_person]->(b)"},
-        {"edge 2->0",
+         "CREATE (a)-[:person_knows_person {weight: 1.5}]->(b)"},
+        {"edge 2->0 (0.5)",
          "MATCH (a:Person), (b:Person) WHERE a.id = 2 AND b.id = 0 "
-         "CREATE (a)-[:person_knows_person]->(b)"},
+         "CREATE (a)-[:person_knows_person {weight: 0.5}]->(b)"},
+        {"edge 0->3 (2.5)",
+         "MATCH (a:Person), (b:Person) WHERE a.id = 0 AND b.id = 3 "
+         "CREATE (a)-[:person_knows_person {weight: 2.5}]->(b)"},
+        {"edge 3->1 (0.5)",
+         "MATCH (a:Person), (b:Person) WHERE a.id = 3 AND b.id = 1 "
+         "CREATE (a)-[:person_knows_person {weight: 0.5}]->(b)"},
+        {"edge p0->c0 (2020)",
+         "MATCH (a:Person), (b:Company) WHERE a.id = 0 AND b.id = 0 "
+         "CREATE (a)-[:person_works_at_company {since: 2020}]->(b)"},
+        {"edge p1->c0 (2018)",
+         "MATCH (a:Person), (b:Company) WHERE a.id = 1 AND b.id = 0 "
+         "CREATE (a)-[:person_works_at_company {since: 2018}]->(b)"},
+        {"edge p2->c1 (2019)",
+         "MATCH (a:Person), (b:Company) WHERE a.id = 2 AND b.id = 1 "
+         "CREATE (a)-[:person_works_at_company {since: 2019}]->(b)"},
+        {"edge p3->c1 (2021)",
+         "MATCH (a:Person), (b:Company) WHERE a.id = 3 AND b.id = 1 "
+         "CREATE (a)-[:person_works_at_company {since: 2021}]->(b)"},
     };
     for (const auto& [label, q] : setup_queries) {
       auto res = conn_->Query(q);
@@ -139,9 +199,9 @@ class SampledMatchTest : public ::testing::Test {
 
     auto load = conn_->Query("LOAD sampled_match;");
     ASSERT_TRUE(load.has_value()) << load.error().ToString();
-    // Run a trivial follow-up query so the LOAD pipeline fully retires before
-    // the test body issues CALL SAMPLED_MATCH (avoids a use-after-free seen
-    // when the LOAD QueryResult is the last object torn down at SetUp exit).
+    // Trivial follow-up so the LOAD pipeline fully retires before any
+    // CALL SAMPLED_MATCH (avoids a use-after-free seen when the LOAD
+    // QueryResult is the last object torn down at SetUp exit).
     auto ping = conn_->Query("RETURN 1 AS x;");
     ASSERT_TRUE(ping.has_value()) << ping.error().ToString();
   }
@@ -156,37 +216,105 @@ class SampledMatchTest : public ::testing::Test {
       std::error_code ec;
       std::filesystem::remove_all(test_dir_, ec);
     }
+    for (const auto& d : pattern_dirs_) {
+      std::error_code ec;
+      std::filesystem::remove_all(d, ec);
+    }
+    pattern_dirs_.clear();
   }
 
  protected:
+  // ---------------------------------------------------------------------------
+  // Test helpers
+  // ---------------------------------------------------------------------------
+
+  // Result of one CALL SAMPLED_MATCH invocation, only the columns we assert on.
+  struct SmResult {
+    bool query_ok = false;             // SQL-layer success
+    std::string error;                 // SQL error (if any)
+    double estimated_count = 0.0;
+    int64_t sample_count = 0;
+    std::string result_file;
+    std::string props_file;
+  };
+
+  // Persist `pattern_json` into a short-prefix tempdir (≤ 48 chars total) so
+  // the path embeds in a CALL SAMPLED_MATCH literal without overflowing
+  // SHORT_STR_LENGTH. Caller doesn't own the dir — TearDown cleans it up.
+  std::string WritePattern(const std::string& pattern_json) {
+    std::string tmpl = "/tmp/sm_XXXXXX";
+    std::vector<char> buf(tmpl.begin(), tmpl.end());
+    buf.push_back('\0');
+    if (mkdtemp(buf.data()) == nullptr) return "";
+    std::filesystem::path dir(buf.data());
+    pattern_dirs_.push_back(dir);
+    auto path = dir / "p.json";
+    std::ofstream ofs(path);
+    if (!ofs.is_open()) return "";
+    ofs << pattern_json;
+    ofs.close();
+    EXPECT_LE(path.string().size(), 48u)
+        << "pattern path must fit in short-string budget; got: "
+        << path.string();
+    return path.string();
+  }
+
+  // Run CALL SAMPLED_MATCH on the given pattern path. Returns a digest with
+  // the four columns the function exposes; query-layer errors are captured
+  // (rather than ASSERTed) so corner-case tests can choose how to react.
+  SmResult RunSampledMatch(const std::string& pattern_path,
+                           int64_t sample_size = 1000) {
+    SmResult r;
+    if (pattern_path.empty()) {
+      r.error = "WritePattern returned empty path";
+      return r;
+    }
+    std::ostringstream q;
+    q << "CALL SAMPLED_MATCH('" << pattern_path << "', " << sample_size
+      << ") RETURN estimated_count, sample_count, result_file, props_file;";
+    auto sm = conn_->Query(q.str());
+    if (!sm.has_value()) {
+      r.error = sm.error().ToString();
+      return r;
+    }
+    const auto& sm_qr = sm.value();
+    const auto& resp = sm_qr.response();
+    if (sm_qr.length() != 1u || resp.arrays_size() != 4) {
+      r.error = "unexpected response shape";
+      return r;
+    }
+    const auto& est = resp.arrays(0).double_array();
+    const auto& cnt = resp.arrays(1).int64_array();
+    const auto& rf = resp.arrays(2).string_array();
+    const auto& pf = resp.arrays(3).string_array();
+    if (est.values_size() != 1 || cnt.values_size() != 1) {
+      r.error = "missing per-row values";
+      return r;
+    }
+    r.query_ok = true;
+    r.estimated_count = est.values(0);
+    r.sample_count = cnt.values(0);
+    r.result_file = rf.values_size() ? rf.values(0) : "";
+    r.props_file = pf.values_size() ? pf.values(0) : "";
+    return r;
+  }
+
   std::filesystem::path test_dir_;
+  std::vector<std::filesystem::path> pattern_dirs_;
   std::unique_ptr<neug::NeugDB> db_;
   std::shared_ptr<neug::Connection> conn_;
 };
 
-// End-to-end coverage for the sampled_match extension on a 3-node triangle:
-//   1. extension LOAD,
-//   2. CALL INITIALIZE() — drives DataGraphMeta::Preprocess and asserts the
-//      triangle's structural counts (3 vertices, 3 edges),
-//   3. CALL SAMPLED_MATCH('p.json', 1000) — runs the FaSTest cardinality
-//      estimator and asserts at least one sampled embedding plus a positive
-//      estimated count.
+// ---------------------------------------------------------------------------
+// 1. Happy-path baseline — drives extension load, INITIALIZE bootstrap, and a
+//    SAMPLED_MATCH on a known-good triangle pattern. The richer dataset
+//    (5 knows-edges among 4 Person nodes, plus a separate Company subgraph)
+//    means counts here differ from the original 3-node fixture.
+// ---------------------------------------------------------------------------
 TEST_F(SampledMatchTest, LoadsExtensionAndGraphQueries) {
-  auto pattern_path = test_dir_ / "triangle.json";
-  {
-    std::ofstream ofs(pattern_path);
-    ASSERT_TRUE(ofs.is_open());
-    ofs << kTrianglePattern;
-  }
-  EXPECT_TRUE(std::filesystem::exists(pattern_path));
-
   auto count = conn_->Query("MATCH (n:Person) RETURN count(*) AS c;");
   ASSERT_TRUE(count.has_value()) << count.error().ToString();
 
-  // Drive the algorithm: CALL INITIALIZE() runs FaSTest's full graph
-  // preprocessing (label mappings + DataGraphMeta) and surfaces the vertex /
-  // edge counts and structural stats. This proves the algorithm pipeline
-  // loads the storage and produces sensible numbers on a known graph.
   auto init = conn_->Query(
       "CALL INITIALIZE() "
       "RETURN status, num_vertices, num_edges, max_degree, degeneracy;");
@@ -205,66 +333,685 @@ TEST_F(SampledMatchTest, LoadsExtensionAndGraphQueries) {
   ASSERT_EQ(edges_col.values_size(), 1);
 
   EXPECT_EQ(status_col.values(0), "success");
-  EXPECT_EQ(vertices_col.values(0), 3);
-  // Triangle has 3 directed edges; FaSTest preprocessing may treat them
-  // undirected (3) or directed (3 + 3 reverse = 6). Accept either as long
-  // as the count matches one of the two well-defined values.
-  EXPECT_TRUE(edges_col.values(0) == 3 || edges_col.values(0) == 6)
+  // 4 Persons + 2 Companies = 6 vertices.
+  EXPECT_EQ(vertices_col.values(0), 6);
+  // 5 knows + 4 works_at = 9 directed edges; preprocessing may double-count
+  // them as undirected (9) or directed-with-reverse (18).
+  EXPECT_TRUE(edges_col.values(0) == 9 || edges_col.values(0) == 18)
       << "unexpected edge count: " << edges_col.values(0);
 
-  // End-to-end CALL SAMPLED_MATCH. The pattern path is embedded as a string
-  // literal in the query, so it must stay short (≤ neug_string_t::
-  // SHORT_STR_LENGTH = 48) — the macOS temp dir alone is well past that, and
-  // the long-string overflow path in the planner is currently broken
-  // (InMemOverflowBuffer::allocateNewBlock is a stub, segfaults on first use).
-  // Keep the file under /tmp/sm_XXXXXX/p.json so the literal stays short.
-  auto short_tmpl = std::string("/tmp/sm_XXXXXX");
-  std::vector<char> tbuf(short_tmpl.begin(), short_tmpl.end());
-  tbuf.push_back('\0');
-  ASSERT_NE(mkdtemp(tbuf.data()), nullptr);
-  std::filesystem::path short_dir(tbuf.data());
-  auto short_pattern = short_dir / "p.json";
-  {
-    std::ofstream ofs(short_pattern);
-    ASSERT_TRUE(ofs.is_open());
-    ofs << kTrianglePattern;
-  }
-  ASSERT_LE(short_pattern.string().size(), 48u)
-      << "pattern path must fit in short-string budget; got: "
-      << short_pattern.string();
-
-  const std::string sm_query =
-      "CALL SAMPLED_MATCH('" + short_pattern.string() +
-      "', 1000) RETURN estimated_count, sample_count, result_file, props_file;";
-  auto sm = conn_->Query(sm_query);
-  std::error_code ec;
-  std::filesystem::remove_all(short_dir, ec);
-  ASSERT_TRUE(sm.has_value()) << sm.error().ToString();
-
-  const auto& sm_qr = sm.value();
-  const auto& sm_resp = sm_qr.response();
-  ASSERT_EQ(sm_qr.length(), 1u);
-  ASSERT_EQ(sm_resp.arrays_size(), 4);
-
-  const auto& estimated_col = sm_resp.arrays(0).double_array();
-  const auto& sample_col = sm_resp.arrays(1).int64_array();
-  ASSERT_EQ(estimated_col.values_size(), 1);
-  ASSERT_EQ(sample_col.values_size(), 1);
-
-  // The triangle has exactly one undirected 3-cycle; FaSTest should sample
-  // at least one embedding and report a non-zero estimated count.
-  EXPECT_GE(sample_col.values(0), 1)
+  auto path = WritePattern(kTrianglePattern);
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  // The graph contains exactly one undirected 3-cycle (0 - 1 - 2 - 0); FaSTest
+  // should sample at least one embedding and report a positive estimate.
+  EXPECT_GE(r.sample_count, 1)
       << "SAMPLED_MATCH returned zero sampled embeddings on a triangle";
-  EXPECT_GT(estimated_col.values(0), 0.0)
+  EXPECT_GT(r.estimated_count, 0.0)
       << "SAMPLED_MATCH returned a non-positive estimated count";
 
-  // Result file should exist and be non-empty.
-  const auto& result_file_col = sm_resp.arrays(2).string_array();
-  ASSERT_EQ(result_file_col.values_size(), 1);
-  const auto& result_file = result_file_col.values(0);
-  EXPECT_FALSE(result_file.empty());
-  EXPECT_TRUE(std::filesystem::exists(result_file));
-  EXPECT_GT(std::filesystem::file_size(result_file), 0u);
+  // Result file must exist and be non-empty.
+  EXPECT_FALSE(r.result_file.empty());
+  EXPECT_TRUE(std::filesystem::exists(r.result_file));
+  EXPECT_GT(std::filesystem::file_size(r.result_file), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// 2. Pattern uses a vertex label that doesn't exist in the schema.
+//    CreatePatternFromJson should bail out, match() should return -1, and the
+//    SAMPLED_MATCH call still completes at the SQL layer (errors are surfaced
+//    via the returned columns, not via Query failure).
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsPatternWithUnknownVertexLabel) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Alien"},
+      {"id": 1, "label": "Alien"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto path = WritePattern(kPattern);
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0)
+      << "match() should signal failure with -1 when label is unknown";
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 3. Pattern uses an edge label that isn't in the schema.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsPatternWithUnknownEdgeLabel) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_loves_person"}
+    ]
+  })";
+  auto path = WritePattern(kPattern);
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 4. Pattern file content is not valid JSON.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsMalformedPatternJson) {
+  auto path = WritePattern("{ this is not json: ,, }");
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 5. Pattern JSON is well-formed but missing required arrays.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsPatternMissingVertices) {
+  auto path = WritePattern(R"({"edges": []})");
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+TEST_F(SampledMatchTest, RejectsPatternMissingEdges) {
+  auto path = WritePattern(R"({"vertices": [{"id": 0, "label": "Person"}]})");
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 6. Pattern file path doesn't exist on disk.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsNonexistentPatternFile) {
+  // Hand-craft a short path that doesn't exist; don't go through
+  // WritePattern (we want the file absent).
+  std::string path = "/tmp/sm_no_such_file.json";
+  ASSERT_FALSE(std::filesystem::exists(path));
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 7. Empty constraint array on a vertex behaves identically to "no
+//    constraints" — i.e. it doesn't accidentally filter all candidates out.
+//    Compares estimated_count (the cardinality estimate) rather than
+//    sample_count, since the sampler saturates at sample_size whenever there
+//    is at least one matching embedding.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EmptyConstraintArrayActsAsNoConstraint) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person", "constraints": []},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto with_empty = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(with_empty.query_ok) << with_empty.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_DOUBLE_EQ(with_empty.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 8. Constraint references a property name that doesn't exist on the vertex
+//    label. The constraint is silently skipped (with a one-shot LOG warning),
+//    so the result must equal the no-constraint baseline.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, VertexConstraintOnUnknownPropertyEqualsBaseline) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "no_such_prop", "operator": "=", "value": 42}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto with_unknown = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(with_unknown.query_ok) << with_unknown.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_DOUBLE_EQ(with_unknown.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 9. Same as above, but on an edge constraint instead of a vertex constraint.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EdgeConstraintOnUnknownPropertyEqualsBaseline) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person",
+       "constraints": [
+         {"property": "no_such_edge_prop", "operator": "=", "value": 1}
+       ]
+      }
+    ]
+  })";
+  auto with_unknown = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(with_unknown.query_ok) << with_unknown.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_DOUBLE_EQ(with_unknown.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 10. A vertex-property equality constraint that *can* match: name = 'Alice'
+//     pins one vertex of the pair, so the count must be strictly less than
+//     the unconstrained baseline (Alice has 2 outgoing knows-edges).
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, VertexConstraintNameRestrictsResults) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "=", "value": "Alice"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto restricted = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restricted.query_ok) << restricted.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  // sample_count saturates at sample_size when *any* embedding matches, so
+  // assert on estimated_count instead. Alice has out-edges 0->1 and 0->3 →
+  // restricted estimate is 2; baseline is 5.
+  EXPECT_GE(restricted.sample_count, 1);
+  EXPECT_GT(restricted.estimated_count, 0.0);
+  EXPECT_LT(restricted.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 11. Multiple constraints on the same vertex are AND-combined implicitly.
+//     Alice has age 20, so {name=Alice, age=20} matches; {name=Alice, age=99}
+//     matches nothing.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, MultipleVertexConstraintsAreAnded_Match) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "=", "value": "Alice"},
+         {"property": "age",  "operator": "=", "value": 20}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_GE(r.sample_count, 1)
+      << "Alice matches both constraints; expected >= 1 sample";
+}
+
+TEST_F(SampledMatchTest, MultipleVertexConstraintsAreAnded_NoMatch) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "=", "value": "Alice"},
+         {"property": "age",  "operator": "=", "value": 99}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_EQ(r.sample_count, 0)
+      << "AND-combined unsatisfiable constraints must yield zero samples";
+}
+
+// ---------------------------------------------------------------------------
+// 12. Constraint value type doesn't match the property type: the underlying
+//     Value::operator== returns false for type-mismatch, so candidates are
+//     silently filtered out. Asserts the (gotcha) behavior so a future fix
+//     that introduces coercion will trip this test and force a deliberate
+//     decision.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, TypeMismatchSilentlyExcludesCandidates) {
+  // age is INT32 in the schema; passing a string forces a type mismatch.
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "age", "operator": "=", "value": "20"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_EQ(r.sample_count, 0)
+      << "Type mismatch should currently filter all candidates (no implicit "
+         "coercion). If this changes, update the test alongside the behavior.";
+}
+
+// ---------------------------------------------------------------------------
+// 13. Unknown operator string: ParseOperator falls back to COMP_EQUAL and
+//     emits a one-shot warning. Asserts that "or" is treated as "=" today —
+//     this also documents that boolean combinators aren't supported.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, UnknownOperatorFallsBackToEqual) {
+  constexpr const char* kFallback = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "or", "value": "Alice"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  constexpr const char* kEqual = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "=", "value": "Alice"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto fallback = RunSampledMatch(WritePattern(kFallback));
+  auto equal = RunSampledMatch(WritePattern(kEqual));
+  ASSERT_TRUE(fallback.query_ok) << fallback.error;
+  ASSERT_TRUE(equal.query_ok) << equal.error;
+  EXPECT_DOUBLE_EQ(fallback.estimated_count, equal.estimated_count)
+      << "Unknown operator must currently behave like '='";
+}
+
+// ---------------------------------------------------------------------------
+// 14. "in" / "not_in" operators: parsed but not implemented at runtime; they
+//     act as a no-op (always true). Result must match the no-constraint
+//     baseline.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, InOperatorIsNoOp) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "in", "value": "Alice"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto in_op = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(in_op.query_ok) << in_op.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_DOUBLE_EQ(in_op.estimated_count, baseline.estimated_count)
+      << "'in' is a runtime no-op today; result should equal the baseline";
+}
+
+// ---------------------------------------------------------------------------
+// 15. Two-label pattern (Person -[works_at]-> Company) — exercises the
+//     multi-label code path on a graph that has 4 such edges.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, TwoLabelPatternPersonWorksAtCompany) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Company"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_works_at_company"}
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_GE(r.sample_count, 1);
+  EXPECT_GT(r.estimated_count, 0.0);
+}
+
+// ---------------------------------------------------------------------------
+// 16. Edge property equality constraint: matches the 3 knows-edges with
+//     weight = 0.5 (0->1, 2->0, 3->1). With a non-matching weight, the
+//     count drops; with a constraint that always matches (or doesn't bind),
+//     the count is unchanged.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EdgeConstraintWeightRestrictsResults) {
+  constexpr const char* kRestrictive = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person",
+       "constraints": [
+         {"property": "weight", "operator": "=", "value": 0.5}
+       ]
+      }
+    ]
+  })";
+  auto restrictive = RunSampledMatch(WritePattern(kRestrictive));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restrictive.query_ok) << restrictive.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_GE(restrictive.sample_count, 1);
+  // 3 of 5 knows-edges have weight=0.5; restricted estimate must be lower.
+  EXPECT_GT(restrictive.estimated_count, 0.0);
+  EXPECT_LT(restrictive.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 17. Constraint missing the "value" field — CreateValueFromRapidjson falls
+//     back to Value::INT32(0). For a STRING property this triggers the same
+//     type-mismatch filter as test 12 (no candidates). Documents the (gotcha)
+//     fallback so a future fix that rejects malformed constraints will trip
+//     this test.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, ConstraintWithoutValueFallsBackToZero) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "="}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  // Missing value defaults to INT32(0); name is STRING → type mismatch →
+  // zero candidates.
+  EXPECT_EQ(r.sample_count, 0)
+      << "Missing constraint value falls back to INT32(0); when the property "
+         "is STRING this should currently filter all candidates.";
+}
+
+// ---------------------------------------------------------------------------
+// 18. Pattern with a single vertex (0-edge): exercises the degenerate case
+//     where preprocessing has nothing to traverse.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, SingleVertexPattern) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"}
+    ],
+    "edges": []
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  // 4 Persons in the graph → estimated count should be ≥ 4 (or fall back
+  // gracefully; either way the call must not crash and not return -1).
+  EXPECT_NE(r.estimated_count, -1.0);
+  EXPECT_GE(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 19. Empty vertices array: pattern is structurally degenerate — match()
+//     guards against pattern_graph_->GetNumVertices() == 0 and returns -1.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, RejectsEmptyVerticesArray) {
+  auto path = WritePattern(R"({"vertices": [], "edges": []})");
+  auto r = RunSampledMatch(path);
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_DOUBLE_EQ(r.estimated_count, -1.0);
+  EXPECT_EQ(r.sample_count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 20. Edge constraint with matching value: weight = 1.5 matches exactly one
+//     knows-edge (1 -> 2). Combined with no vertex constraints, the sampled
+//     count should be ≥ 1.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EdgeConstraintExactWeightMatchesSingleEdge) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person",
+       "constraints": [
+         {"property": "weight", "operator": "=", "value": 1.5}
+       ]
+      }
+    ]
+  })";
+  auto r = RunSampledMatch(WritePattern(kPattern));
+  ASSERT_TRUE(r.query_ok) << r.error;
+  EXPECT_GE(r.sample_count, 1)
+      << "weight=1.5 matches edge 1->2; expected >= 1 sample";
+}
+
+// ---------------------------------------------------------------------------
+// 21. Vertex constraint with '>' on age: matches Bob (30) and Dave (40); as
+//     source vertex that selects 2 of the 5 knows-edges (1->2, 3->1).
+//     CheckValueConstraint implements '>' at runtime; this test locks in
+//     that the operator is dispatched and applied (not silently skipped).
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, VertexConstraintGreaterThanRestrictsResults) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "age", "operator": ">", "value": 25}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto restricted = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restricted.query_ok) << restricted.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_GE(restricted.sample_count, 1);
+  EXPECT_GT(restricted.estimated_count, 0.0);
+  EXPECT_LT(restricted.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 22. Vertex constraint with '<' on age: matches Alice (20) and Carol (20);
+//     as source vertex that selects 0->1, 0->3, 2->0 = 3 of 5 knows-edges.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, VertexConstraintLessThanRestrictsResults) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "age", "operator": "<", "value": 25}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto restricted = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restricted.query_ok) << restricted.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_GE(restricted.sample_count, 1);
+  EXPECT_GT(restricted.estimated_count, 0.0);
+  EXPECT_LT(restricted.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 23. Boundary handling for '>' vs '>=': Dave's age is exactly 40, so
+//     age > 40 must yield zero samples while age >= 40 must match Dave.
+//     This pins the exclusion vs. inclusion semantics that test 21 alone
+//     can't distinguish.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, GreaterAndGreaterEqualHandleBoundary) {
+  constexpr const char* kStrict = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "age", "operator": ">", "value": 40}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  constexpr const char* kInclusive = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "age", "operator": ">=", "value": 40}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto strict = RunSampledMatch(WritePattern(kStrict));
+  auto inclusive = RunSampledMatch(WritePattern(kInclusive));
+  ASSERT_TRUE(strict.query_ok) << strict.error;
+  ASSERT_TRUE(inclusive.query_ok) << inclusive.error;
+  EXPECT_EQ(strict.sample_count, 0)
+      << "age > 40 should exclude Dave (age=40); expected zero samples";
+  EXPECT_GE(inclusive.sample_count, 1)
+      << "age >= 40 should include Dave (age=40); expected >= 1 sample";
+}
+
+// ---------------------------------------------------------------------------
+// 24. Edge constraint with '>=' on weight: weight >= 1.5 matches 1->2 (1.5)
+//     and 0->3 (2.5) — 2 of 5 knows-edges. The boundary value 1.5 is
+//     deliberately included so the test would also fail if '>=' regressed
+//     to strict '>' (count would drop to 1, still less-than-baseline, so
+//     the assertion is "strictly less" not "exactly N").
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EdgeConstraintGreaterEqualRestrictsResults) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person",
+       "constraints": [
+         {"property": "weight", "operator": ">=", "value": 1.5}
+       ]
+      }
+    ]
+  })";
+  auto restricted = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restricted.query_ok) << restricted.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_GE(restricted.sample_count, 1);
+  EXPECT_GT(restricted.estimated_count, 0.0);
+  EXPECT_LT(restricted.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 25. Edge constraint with '<=' on weight: weight <= 0.5 matches the three
+//     0.5-weight edges (0->1, 2->0, 3->1). Boundary inclusion of 0.5 is
+//     load-bearing — if '<=' regressed to strict '<', no edges would match
+//     (smallest weight in the graph is 0.5) and sample_count would be 0.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, EdgeConstraintLessEqualRestrictsResults) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person"},
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person",
+       "constraints": [
+         {"property": "weight", "operator": "<=", "value": 0.5}
+       ]
+      }
+    ]
+  })";
+  auto restricted = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(restricted.query_ok) << restricted.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_GE(restricted.sample_count, 1)
+      << "weight <= 0.5 should match the three 0.5-weight edges";
+  EXPECT_GT(restricted.estimated_count, 0.0);
+  EXPECT_LT(restricted.estimated_count, baseline.estimated_count);
+}
+
+// ---------------------------------------------------------------------------
+// 26. 'not_in' operator: parsed but treated as a runtime no-op (always true),
+//     mirroring 'in' (test 14). Documents the symmetric behavior so a future
+//     implementation that adds real semantics will trip both tests together.
+// ---------------------------------------------------------------------------
+TEST_F(SampledMatchTest, NotInOperatorIsNoOp) {
+  constexpr const char* kPattern = R"({
+    "vertices": [
+      {"id": 0, "label": "Person",
+       "constraints": [
+         {"property": "name", "operator": "not_in", "value": "Alice"}
+       ]
+      },
+      {"id": 1, "label": "Person"}
+    ],
+    "edges": [
+      {"source": 0, "target": 1, "label": "person_knows_person"}
+    ]
+  })";
+  auto not_in_op = RunSampledMatch(WritePattern(kPattern));
+  auto baseline = RunSampledMatch(WritePattern(kSingleEdgePattern));
+  ASSERT_TRUE(not_in_op.query_ok) << not_in_op.error;
+  ASSERT_TRUE(baseline.query_ok) << baseline.error;
+  EXPECT_DOUBLE_EQ(not_in_op.estimated_count, baseline.estimated_count)
+      << "'not_in' is a runtime no-op today; result should equal the baseline";
 }
 
 }  // namespace test
