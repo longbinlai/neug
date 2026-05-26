@@ -518,13 +518,11 @@ class TestExport:
         finally:
             self.conn.execute("MATCH (v:person {ID: 1006}) DELETE v")
 
-    @extension_test
     def test_export_person_json_array(self):
         """Export scalar columns to a single JSON array; verify row count and keys."""
         out_path = self.tmp_path / "person.json"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:person) RETURN v.fName, v.age")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(
             f"COPY (MATCH (v:person) RETURN v.fName, v.age) TO '{out_path}';"
         )
@@ -543,13 +541,11 @@ class TestExport:
                 "age" in first or "v.age" in first
             ), "First row should have age (or v.age) key"
 
-    @extension_test
     def test_export_person_node_json_array(self):
         """Export full node to a single JSON array; verify row count and structure."""
         out_path = self.tmp_path / "person_node.json"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:person) RETURN v")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(f"COPY (MATCH (v:person) RETURN v) TO '{out_path}';")
         assert out_path.exists(), f"Output file not created: {out_path}"
         data = _parse_json_array(out_path)
@@ -560,13 +556,11 @@ class TestExport:
             first = data[0]
             assert isinstance(first, dict), "Each row should be a JSON object"
 
-    @extension_test
     def test_export_person_jsonl(self):
         """Export scalar columns to JSONL (one JSON object per line); verify count and keys."""
         out_path = self.tmp_path / "person.jsonl"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:person) RETURN v.fName, v.age")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(
             f"COPY (MATCH (v:person) RETURN v.fName, v.age) TO '{out_path}';"
         )
@@ -585,13 +579,11 @@ class TestExport:
                 "age" in first or "v.age" in first
             ), "First row should have age (or v.age) key"
 
-    @extension_test
     def test_export_person_node_jsonl(self):
         """Export full node to JSONL (one JSON object per line); verify row count."""
         out_path = self.tmp_path / "person_node.jsonl"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:person) RETURN v")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(f"COPY (MATCH (v:person) RETURN v) TO '{out_path}';")
         assert out_path.exists(), f"Output file not created: {out_path}"
         rows = _parse_jsonl(out_path)
@@ -601,7 +593,6 @@ class TestExport:
         if rows:
             assert isinstance(rows[0], dict), "Each line should be a JSON object"
 
-    @extension_test
     def test_export_collect_names_jsonl(self):
         """Export collect names to JSONL (one JSON object per line); verify row count."""
         out_path = self.tmp_path / "collect_names.jsonl"
@@ -609,7 +600,6 @@ class TestExport:
         expected = _count_query(
             self.conn, "MATCH (v:person) RETURN v.ID, collect(v.fName)"
         )
-        self.conn.execute("LOAD JSON")
         self.conn.execute(
             f"COPY (MATCH (v:person) RETURN v.ID, collect(v.fName)) TO '{out_path}';"
         )
@@ -651,13 +641,11 @@ class TestExportComprehensiveGraph:
         assert header is not None and len(header) == 11
         assert len(rows) == expected
 
-    @extension_test
     def test_export_comprehensive_graph_node_to_json_array(self):
         """Export node_a vertices from comprehensive_graph to JSON array; verify row count and structure."""
         out_path = self.tmp_path / "node_a.json"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:node_a) RETURN v.*")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(f"COPY (MATCH (v:node_a) RETURN v.*) TO '{out_path}';")
         assert out_path.exists(), f"Output file not created: {out_path}"
         data = _parse_json_array(out_path)
@@ -668,13 +656,11 @@ class TestExportComprehensiveGraph:
             first = data[0]
             assert isinstance(first, dict), "Each row should be a JSON object"
 
-    @extension_test
     def test_export_comprehensive_graph_node_to_jsonl(self):
         """Export node_a vertices from comprehensive_graph to JSONL; verify row count and structure."""
         out_path = self.tmp_path / "node_a.jsonl"
         out_path.unlink(missing_ok=True)
         expected = _count_query(self.conn, "MATCH (v:node_a) RETURN v.*")
-        self.conn.execute("LOAD JSON")
         self.conn.execute(f"COPY (MATCH (v:node_a) RETURN v.*) TO '{out_path}';")
         assert out_path.exists(), f"Output file not created: {out_path}"
         rows = _parse_jsonl(out_path)
@@ -876,3 +862,170 @@ class TestParquetExport:
         load_result = self.conn.execute(f'LOAD FROM "{out_path}" RETURN *')
         records = list(load_result)
         assert len(records) == expected, f"Expected {expected} rows, got {len(records)}"
+
+
+# =============================================================================
+# HTTPFS Export E2E Tests (OSS / HTTP)
+# Requires: NEUG_RUN_EXTENSION_TESTS=1, HTTPFS extension loaded, and writable bucket
+# =============================================================================
+
+HTTPFS_WRITE_TESTS_ENABLED = all(
+    [
+        EXTENSION_TESTS_ENABLED,
+        os.environ.get("OSS_ACCESS_KEY_ID"),
+        os.environ.get("OSS_ACCESS_KEY_SECRET"),
+    ]
+)
+httpfs_write_test = pytest.mark.skipif(
+    not HTTPFS_WRITE_TESTS_ENABLED,
+    reason=(
+        "HTTPFS write tests disabled; set NEUG_RUN_EXTENSION_TESTS=1, "
+        "OSS_ACCESS_KEY_ID, and OSS_ACCESS_KEY_SECRET to enable."
+    ),
+)
+
+
+@httpfs_write_test
+class TestExportHTTPFS:
+    """COPY TO HTTPFS (OSS/S3) E2E tests. Requires a writable bucket."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        src_db = "/tmp/tinysnb"
+        if not os.path.exists(src_db):
+            pytest.fail(f"Database not found at {src_db}")
+        self.db_dir = str(tmp_path / "tinysnb")
+        shutil.copytree(src_db, self.db_dir)
+        self.db = Database(db_path=self.db_dir, mode="w")
+        self.conn = self.db.connect()
+        self.conn.execute("LOAD HTTPFS")
+        self.conn.execute("LOAD PARQUET")
+
+        self.bucket = "graphscope"
+        self.endpoint = "oss-cn-beijing.aliyuncs.com"
+        yield
+        try:
+            self.conn.close()
+        finally:
+            self.db.close()
+
+    def _httpfs_path(self, filename):
+        """Build a fixed oss:// path. Repeated runs overwrite the same file."""
+        return f"oss://{self.bucket}/neug_e2e_test/{filename}"
+
+    def _export_options(self):
+        """Build common export options string (credentials from env vars)."""
+        return f"OSS_ENDPOINT='{self.endpoint}'"
+
+    # --- CSV ---
+
+    def test_export_person_csv_to_httpfs(self):
+        """Export person nodes to HTTPFS as CSV, then read back and verify row count."""
+        httpfs_path = self._httpfs_path("person.csv")
+        opts = self._export_options()
+        expected = _count_query(self.conn, "MATCH (v:person) RETURN v.ID, v.fName")
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) RETURN v.ID, v.fName) TO "
+            f"'{httpfs_path}' (HEADER = true, {opts});"
+        )
+
+        results = list(
+            self.conn.execute(f'LOAD FROM "{httpfs_path}" ({opts}) RETURN *;')
+        )
+        assert (
+            len(results) == expected
+        ), f"Expected {expected} rows read back from HTTPFS, got {len(results)}"
+
+    def test_export_with_filter_to_httpfs(self):
+        """Export filtered results to HTTPFS, verify data arrives."""
+        httpfs_path = self._httpfs_path("filtered.csv")
+        opts = self._export_options()
+        expected = _count_query(
+            self.conn, "MATCH (v:person) WHERE v.age > 20 RETURN v.ID, v.fName, v.age"
+        )
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) WHERE v.age > 20 RETURN v.ID, v.fName, v.age) TO "
+            f"'{httpfs_path}' (HEADER = true, DELIMITER = ',', {opts});"
+        )
+
+        results = list(
+            self.conn.execute(
+                f"LOAD FROM \"{httpfs_path}\" (DELIMITER = ',', {opts}) RETURN *;"
+            )
+        )
+        assert len(results) == expected, f"Expected {expected} rows, got {len(results)}"
+
+    def test_export_empty_result_to_httpfs(self):
+        """Export an empty result set to HTTPFS — should succeed without error."""
+        httpfs_path = self._httpfs_path("empty.csv")
+        opts = self._export_options()
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) WHERE v.ID = -999 RETURN v.ID) TO "
+            f"'{httpfs_path}' (HEADER = true, {opts});"
+        )
+
+        results = list(
+            self.conn.execute(f'LOAD FROM "{httpfs_path}" ({opts}) RETURN *;')
+        )
+        assert len(results) == 0, f"Expected 0 rows, got {len(results)}"
+
+    # --- JSON ---
+
+    def test_export_person_json_to_httpfs(self):
+        """Export person nodes to HTTPFS as JSON array, then read back and verify."""
+        httpfs_path = self._httpfs_path("person.json")
+        opts = self._export_options()
+        expected = _count_query(self.conn, "MATCH (v:person) RETURN v.fName, v.age")
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) RETURN v.fName, v.age) TO "
+            f"'{httpfs_path}' ({opts});"
+        )
+
+        results = list(
+            self.conn.execute(f'LOAD FROM "{httpfs_path}" ({opts}) RETURN *;')
+        )
+        assert (
+            len(results) == expected
+        ), f"Expected {expected} rows from JSON, got {len(results)}"
+
+    def test_export_person_jsonl_to_httpfs(self):
+        """Export person nodes to HTTPFS as JSONL, then read back and verify."""
+        httpfs_path = self._httpfs_path("person.jsonl")
+        opts = self._export_options()
+        expected = _count_query(self.conn, "MATCH (v:person) RETURN v.fName, v.age")
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) RETURN v.fName, v.age) TO "
+            f"'{httpfs_path}' ({opts});"
+        )
+
+        results = list(
+            self.conn.execute(f'LOAD FROM "{httpfs_path}" ({opts}) RETURN *;')
+        )
+        assert (
+            len(results) == expected
+        ), f"Expected {expected} rows from JSONL, got {len(results)}"
+
+    # --- Parquet ---
+
+    def test_export_person_parquet_to_httpfs(self):
+        """Export person nodes to HTTPFS as Parquet, then read back and verify."""
+        httpfs_path = self._httpfs_path("person.parquet")
+        opts = self._export_options()
+        expected = _count_query(self.conn, "MATCH (v:person) RETURN v.ID, v.fName")
+
+        self.conn.execute(
+            f"COPY (MATCH (v:person) RETURN v.ID, v.fName) TO "
+            f"'{httpfs_path}' ({opts});"
+        )
+
+        results = list(
+            self.conn.execute(f'LOAD FROM "{httpfs_path}" ({opts}) RETURN *;')
+        )
+        assert (
+            len(results) == expected
+        ), f"Expected {expected} rows from Parquet, got {len(results)}"

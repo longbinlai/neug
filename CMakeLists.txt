@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/NEUG_VERSION NEUG_VERSION)
 # Strip trailing newline
@@ -279,8 +279,14 @@ macro(install_neug_target target)
         set(_neug_install_target ${target})
     endif()
 
-    get_target_property(_neug_public_headers ${_neug_install_target} PUBLIC_HEADER)
-    get_target_property(_neug_target_source_dir ${_neug_install_target} SOURCE_DIR)
+    get_target_property(_neug_target_type ${_neug_install_target} TYPE)
+    if(_neug_target_type STREQUAL "INTERFACE_LIBRARY")
+        set(_neug_public_headers "_neug_public_headers-NOTFOUND")
+        set(_neug_target_source_dir "")
+    else()
+        get_target_property(_neug_public_headers ${_neug_install_target} PUBLIC_HEADER)
+        get_target_property(_neug_target_source_dir ${_neug_install_target} SOURCE_DIR)
+    endif()
     if(_neug_public_headers AND NOT _neug_public_headers STREQUAL "_neug_public_headers-NOTFOUND" AND NOT _neug_public_headers STREQUAL "NOTFOUND")
         set(_neug_public_header_abs)
         foreach(_hdr IN LISTS _neug_public_headers)
@@ -579,20 +585,25 @@ endif()
 
 #find arrow----------------------------------------------------------------------
 
-# Configure Arrow JSON support if json extension is enabled
-if(BUILD_EXTENSIONS AND "json" IN_LIST BUILD_EXTENSIONS)
-    set(ARROW_JSON ON CACHE BOOL "" FORCE)
-    # Use system RapidJSON instead of building it (project already has rapidjson in third_party)
-    set(RapidJSON_SOURCE "SYSTEM" CACHE STRING "" FORCE)
-    # Point Arrow to use the project's RapidJSON
-    set(RapidJSON_ROOT "${CMAKE_SOURCE_DIR}/third_party/rapidjson" CACHE PATH "" FORCE)
-    message(STATUS "Arrow JSON support enabled for json extension")
-endif()
+# Always enable Arrow JSON support (built-in).
+# JSON is now a core feature since v0.1.2, not an optional extension.
+set(ARROW_JSON ON CACHE BOOL "" FORCE)
+# Use system RapidJSON instead of building it (project already has rapidjson in third_party)
+set(RapidJSON_SOURCE "SYSTEM" CACHE STRING "" FORCE)
+# Point Arrow to use the project's RapidJSON
+set(RapidJSON_ROOT "${CMAKE_SOURCE_DIR}/third_party/rapidjson" CACHE PATH "" FORCE)
+message(STATUS "Arrow JSON support enabled (built-in)")
 
 # Configure Arrow Parquet support if parquet extension is enabled
 if(BUILD_EXTENSIONS AND "parquet" IN_LIST BUILD_EXTENSIONS)
     set(ARROW_ENABLE_PARQUET ON CACHE BOOL "" FORCE)
     message(STATUS "Arrow Parquet support enabled for parquet extension")
+endif()
+
+# Configure Arrow S3 support if httpfs extension is enabled
+if(BUILD_EXTENSIONS AND "httpfs" IN_LIST BUILD_EXTENSIONS)
+    set(ARROW_ENABLE_S3 ON CACHE BOOL "" FORCE)
+    message(STATUS "Arrow S3 support enabled for httpfs extension")
 endif()
 
 set(NEUG_USE_SYSTEM_ARROW OFF)
