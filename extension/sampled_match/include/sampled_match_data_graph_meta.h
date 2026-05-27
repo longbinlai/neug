@@ -603,8 +603,8 @@ private:
     // ========== Schema Index & View Cache (~1KB total, pointers only) ==========
     std::unordered_map<uint32_t, std::vector<label_t>> out_schema_index_;
     std::unordered_map<uint32_t, std::vector<label_t>> in_schema_index_;
-    std::unordered_map<uint64_t, GenericView> out_view_cache_;
-    std::unordered_map<uint64_t, GenericView> in_view_cache_;
+    std::unordered_map<uint64_t, CsrView> out_view_cache_;
+    std::unordered_map<uint64_t, CsrView> in_view_cache_;
     std::unordered_map<label_t, std::vector<std::pair<label_t, label_t>>> out_schemas_by_src_;
     std::unordered_map<label_t, std::vector<std::pair<label_t, label_t>>> in_schemas_by_dst_;
 };

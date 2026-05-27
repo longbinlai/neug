@@ -1061,7 +1061,7 @@ namespace SubgraphMatching {
                 neug::EdgeDataAccessor accessor = graph_.GetEdgeDataAccessor(src_label, dst_label, edge_label, prop_idx);
                 
                 // Get the outgoing graph view to find the edge
-                neug::GenericView view = graph_.GetGenericOutgoingGraphView(src_label, dst_label, edge_label);
+                neug::CsrView view = graph_.GetGenericOutgoingGraphView(src_label, dst_label, edge_label);
                 neug::NbrList edges = view.get_edges(src_vid);
                 
                 // Find the edge to dst_vid and get its property

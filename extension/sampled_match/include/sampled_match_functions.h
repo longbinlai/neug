@@ -787,7 +787,7 @@ class SampledSubgraphMatcher {
             }
             std::string label = vertex["label"].GetString();
 
-            if (!schema.contains_vertex_label(label)) {
+            if (!schema.is_vertex_label_valid(label)) {
                 LOG(WARNING) << "[SAMPLED_MATCH] Pattern vertex label '" << label
                              << "' not found in schema; aborting pattern load";
                 return nullptr;
@@ -839,7 +839,7 @@ class SampledSubgraphMatcher {
             }
 
             if (!edge_type.empty()) {
-                if (!schema.contains_edge_label(edge_type)) {
+                if (!schema.is_edge_label_valid(edge_type)) {
                     LOG(WARNING) << "[SAMPLED_MATCH] Pattern edge label '" << edge_type
                                  << "' not found in schema; aborting pattern load";
                     return nullptr;
@@ -1314,7 +1314,7 @@ class SampledSubgraphMatcher {
                 try {
                     EdgeDataAccessor accessor = readInterface->GetEdgeDataAccessor(
                         ue.src_label, ue.dst_label, ue.edge_label, ue.ordered_prop_indices[pi]);
-                    GenericView view = readInterface->GetGenericOutgoingGraphView(
+                    CsrView view = readInterface->GetGenericOutgoingGraphView(
                         ue.src_label, ue.dst_label, ue.edge_label);
                     
                     for (auto it = view.get_edges(ue.src_vid).begin(); 
@@ -1974,7 +1974,7 @@ struct GetVertexPropertyFunction {
       }
 
       const auto& schema = readInterface->schema();
-      if (!schema.contains_vertex_label(propInput.vertex_label)) {
+      if (!schema.is_vertex_label_valid(propInput.vertex_label)) {
         LOG(ERROR) << "[GET_VERTEX_PROPERTY] vertex label '" << propInput.vertex_label << "' not found in schema";
         return execution::Context();
       }
@@ -2267,7 +2267,7 @@ struct GetEdgePropertyFunction {
             try {
               EdgeDataAccessor accessor = readInterface->GetEdgeDataAccessor(
                   pe.src_label, pe.dst_label, pe.edge_label_id, prop_indices[p]);
-              GenericView view = readInterface->GetGenericOutgoingGraphView(
+              CsrView view = readInterface->GetGenericOutgoingGraphView(
                   pe.src_label, pe.dst_label, pe.edge_label_id);
 
               // Locate the requested dst vertex among the src's out-edges.

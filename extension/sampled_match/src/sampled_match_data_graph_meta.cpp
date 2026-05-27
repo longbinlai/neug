@@ -104,7 +104,7 @@ void DataGraphMeta::BuildIdMapping() {
     // First pass: find max vid per label to size the fast-lookup arrays
     std::vector<vid_t> max_vid_per_label(num_vertex_labels, 0);
     for (label_t label = 0; label < num_vertex_labels; ++label) {
-        if (!schema.vertex_label_valid(label)) continue;
+        if (!schema.is_vertex_label_valid(label)) continue;
         VertexSet vs = graph_.GetVertexSet(label);
         for (vid_t vid : vs) {
             if (vid >= max_vid_per_label[label]) max_vid_per_label[label] = vid + 1;
@@ -113,11 +113,11 @@ void DataGraphMeta::BuildIdMapping() {
     for (label_t label = 0; label < num_vertex_labels; ++label) {
         label_vid_to_global_[label].assign(max_vid_per_label[label], -1);
     }
-    
+
     // Iterate through all vertex labels and assign global IDs
     int global_id = 0;
     for (label_t label = 0; label < num_vertex_labels; ++label) {
-        if (!schema.vertex_label_valid(label)) continue;
+        if (!schema.is_vertex_label_valid(label)) continue;
         
         VertexSet vs = graph_.GetVertexSet(label);
         LOG(INFO) << "[BuildIdMapping] Label " << (int)label 
@@ -173,7 +173,7 @@ void DataGraphMeta::BuildNeighbors() {
                   << " (" << schema.get_edge_label_name(e_label) << ")";
         
         try {
-            GenericView out_view = graph_.GetGenericOutgoingGraphView(
+            CsrView out_view = graph_.GetGenericOutgoingGraphView(
                 src_label, dst_label, e_label);
             
             VertexSet src_vs = graph_.GetVertexSet(src_label);
