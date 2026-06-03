@@ -34,6 +34,8 @@ import yaml
 QWEN_ENDPOINT = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen3-max")
 
+CONFIDENCE_LEVELS = {"high": 3, "medium": 2, "low": 1}
+
 SYSTEM_PROMPT = """\
 You are an issue-triage assistant for the NeuG graph database project.
 
@@ -102,7 +104,26 @@ def is_umbrella(cfg: dict, title: str, number: int) -> bool:
     return any(u["number"] == number for u in cfg["umbrellas"])
 
 
-def render_comment(cfg: dict, result: dict) -> str:
+def should_auto_link(cfg: dict, confidence: str) -> bool:
+    threshold = cfg.get("auto_link_threshold", "never")
+    if threshold == "never":
+        return False
+    return CONFIDENCE_LEVELS.get(confidence, 0) >= CONFIDENCE_LEVELS.get(threshold, 99)
+
+
+def link_sub_issue(repo: str, parent_number: int, child_issue_id: int) -> bool:
+    result = subprocess.run(
+        ["gh", "api", f"repos/{repo}/issues/{parent_number}/sub_issues",
+         "-X", "POST", "-F", f"sub_issue_id={child_issue_id}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        print(f"Failed to link sub-issue: {result.stderr.strip()}")
+        return False
+    return True
+
+
+def render_comment(cfg: dict, result: dict, auto_linked: bool) -> str:
     umbrella = result.get("umbrella")
     confidence = result.get("confidence", "low")
     reason = result.get("reason", "")
@@ -115,6 +136,14 @@ def render_comment(cfg: dict, result: dict) -> str:
         )
     match = next((u for u in cfg["umbrellas"] if u["number"] == umbrella), None)
     label = match["title"] if match else "(unknown)"
+    if auto_linked:
+        return (
+            f"🤖 **Auto-triage**: linked as sub-issue of "
+            f"**#{umbrella} — {label}** (confidence: `{confidence}`).\n\n"
+            f"_Reason_: {reason}\n\n"
+            f"If this is wrong, please unlink and re-assign — your correction "
+            f"improves this bot."
+        )
     return (
         f"🤖 **Auto-triage suggestion**: this looks like a sub-issue of "
         f"**#{umbrella} — {label}** (confidence: `{confidence}`).\n\n"
@@ -160,7 +189,17 @@ def main() -> int:
 
     print("Qwen result:", json.dumps(result, ensure_ascii=False))
 
-    comment = render_comment(cfg, result)
+    umbrella = result.get("umbrella")
+    confidence = result.get("confidence", "low")
+    auto_linked = False
+
+    if umbrella and should_auto_link(cfg, confidence):
+        child_id = issue["id"]
+        auto_linked = link_sub_issue(repo, umbrella, child_id)
+        if auto_linked:
+            print(f"Auto-linked #{number} as sub-issue of #{umbrella}")
+
+    comment = render_comment(cfg, result, auto_linked)
     post_comment(repo, number, comment)
     print(f"Posted triage comment on #{number}")
     return 0
