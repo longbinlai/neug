@@ -15,7 +15,7 @@ concurrency:
 jobs:
   triage:
     runs-on: ubuntu-latest
-    if: github.event.issue.state == 'open' && secrets.DASHSCOPE_API_KEY != ''
+    if: github.event.issue.state == 'open'
     steps:
       - uses: actions/checkout@v4
 
