@@ -276,28 +276,49 @@ def main() -> int:
     confidence = result.get("confidence", "low")
     auto_linked = False
 
-    if umbrella and should_auto_link(cfg, confidence):
+    # check if issue already has a parent
+    has_parent = bool(issue.get("sub_issue_summary") or issue.get("parent"))
+    if not has_parent:
+        # sub_issue_summary/parent may not be in the event payload; check via API
+        parent_check = subprocess.run(
+            ["gh", "api", f"repos/{repo}/issues/{number}",
+             "--jq", ".parent // empty"],
+            capture_output=True, text=True,
+        )
+        has_parent = bool(parent_check.stdout.strip())
+
+    if has_parent:
+        print(f"Issue #{number} already has a parent; skipping auto-link")
+    elif umbrella and should_auto_link(cfg, confidence):
         child_id = issue["id"]
         auto_linked = link_sub_issue(repo, umbrella, child_id)
         if auto_linked:
             print(f"Auto-linked #{number} as sub-issue of #{umbrella}")
 
-    # set issue type
+    # set issue type (skip if already assigned)
     issue_type = result.get("type", "")
     type_set = False
-    if issue_type in ISSUE_TYPES:
+    existing_type = issue.get("type")
+    if existing_type:
+        print(f"Issue already has type '{existing_type.get('name', '')}'; skipping type assignment")
+    elif issue_type in ISSUE_TYPES:
         type_set = set_issue_type(repo, number, issue_type)
         if type_set:
             print(f"Set issue type to {issue_type}")
 
-    # set subsystem labels
+    # set subsystem labels (only add labels not already present)
     pred_labels = result.get("labels", [])
-    labels_set = [l for l in pred_labels if l in SUBSYSTEM_LABELS]
-    if labels_set:
-        if set_issue_labels(repo, number, labels_set):
+    existing_labels = {l["name"] for l in issue.get("labels", [])}
+    labels_to_add = [l for l in pred_labels if l in SUBSYSTEM_LABELS and l not in existing_labels]
+    labels_set = []
+    if labels_to_add:
+        if set_issue_labels(repo, number, labels_to_add):
+            labels_set = labels_to_add
             print(f"Set labels: {labels_set}")
-        else:
-            labels_set = []
+    elif pred_labels:
+        already = [l for l in pred_labels if l in existing_labels]
+        if already:
+            print(f"Labels already present: {already}; skipping")
 
     comment = render_comment(cfg, result, auto_linked, type_set, labels_set)
     post_comment(repo, number, comment)
