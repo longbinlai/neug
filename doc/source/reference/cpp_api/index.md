@@ -43,8 +43,10 @@ int main() {
 
   // Process results
   if (result.has_value()) {
-    for (auto& record : result.value()) {
-      std::cout << record.ToString() << std::endl;
+    auto& qr = result.value();
+    while (qr.HasNext()) {
+      std::cout << qr.GetValueAsString(0) << std::endl;
+      qr.Next();
     }
   }
 
