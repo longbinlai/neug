@@ -15,8 +15,10 @@ db.Open("/path/to/data", 4);  // 4 threads
 auto conn = db.Connect();
 auto result = conn->Query("MATCH (n:Person) RETURN n LIMIT 10");
 // Process results
-for (auto& record : result.value()) {
-  std::cout << record.ToString() << std::endl;
+auto& qr = result.value();
+while (qr.HasNext()) {
+  std::cout << qr.GetValueAsString(0) << std::endl;
+  qr.Next();
 }
 // Close database (persists data)
 db.Close();

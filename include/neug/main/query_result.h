@@ -16,7 +16,6 @@
 
 #include <stddef.h>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -26,18 +25,6 @@
 #include "neug/generated/proto/response/response.pb.h"
 
 namespace neug {
-class RowView {
- public:
-  RowView(const neug::QueryResponse* response, size_t row_index)
-      : response_(response), row_index_(row_index) {}
-
-  std::string ToString() const;
-
- private:
-  const neug::QueryResponse* response_ = nullptr;
-  size_t row_index_ = 0;
-};
-
 /**
  * @brief Lightweight wrapper around protobuf `QueryResponse`.
  *
@@ -47,58 +34,19 @@ class RowView {
  * - accessing response schema (`result_schema()`),
  * - serializing/deserializing (`Serialize()` / `From()`),
  * - debugging output (`ToString()`),
- * - read-only row traversal via C++ range-for (`begin()/end()`).
- *
- * Note: traversal currently provides row index + column access to raw protobuf
- * arrays through `RowView`, rather than materialized typed cell values.
+ * - cursor-based row traversal via `HasNext()` / `Next()`,
+ * - typed cell access via `GetInt32()`, `GetString()`, etc.
  */
 
 class QueryResult {
  public:
-  class const_iterator {
-   public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = RowView;
-    using difference_type = std::ptrdiff_t;
-    using pointer = void;
-    using reference = RowView;
-
-    const_iterator() = default;
-    const_iterator(const neug::QueryResponse* response, size_t row_index)
-        : response_(response), row_index_(row_index) {}
-
-    value_type operator*() const { return RowView(response_, row_index_); }
-
-    const_iterator& operator++() {
-      ++row_index_;
-      return *this;
-    }
-
-    const_iterator operator++(int) {
-      const_iterator tmp(*this);
-      ++(*this);
-      return tmp;
-    }
-
-    bool operator==(const const_iterator& other) const {
-      return response_ == other.response_ && row_index_ == other.row_index_;
-    }
-
-    bool operator!=(const const_iterator& other) const {
-      return !(*this == other);
-    }
-
-   private:
-    const neug::QueryResponse* response_ = nullptr;
-    size_t row_index_ = 0;
-  };
-
   static QueryResult From(std::string&& serialized_table);
   static QueryResult From(const std::string& serialized_table);
 
   QueryResult() : response_(std::make_shared<neug::QueryResponse>()) {}
 
   QueryResult(QueryResult&& other) noexcept = default;
+  QueryResult& operator=(QueryResult&& other) noexcept = default;
 
   QueryResult(const neug::QueryResponse& response)
       : response_(std::make_shared<neug::QueryResponse>(response)) {}
@@ -108,9 +56,78 @@ class QueryResult {
 
   ~QueryResult() {}
 
-  void Swap(QueryResult& other) noexcept { response_.swap(other.response_); }
+  void Swap(QueryResult& other) noexcept {
+    response_.swap(other.response_);
+    std::swap(current_row_index_, other.current_row_index_);
+  }
 
-  void Swap(QueryResult&& other) noexcept { response_.swap(other.response_); }
+  void Swap(QueryResult&& other) noexcept {
+    response_.swap(other.response_);
+    std::swap(current_row_index_, other.current_row_index_);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cursor-based row traversal (DuckDB style)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * @brief Check whether there are more rows to consume.
+   */
+  bool HasNext() const;
+
+  /**
+   * @brief Advance the cursor to the next row.
+   *
+   * Throws if no more rows are available (check HasNext() first).
+   */
+  void Next();
+
+  /**
+   * @brief Reset the internal cursor back to the first row.
+   */
+  void Reset() { current_row_index_ = 0; }
+
+  /**
+   * @brief Return the current cursor position (0-based row index).
+   */
+  size_t CurrentRowIndex() const { return current_row_index_; }
+
+  // ---------------------------------------------------------------------------
+  // Typed value accessors — read from the current cursor row by column index
+  // ---------------------------------------------------------------------------
+
+  /**
+   * @brief Check whether the cell at current row is NULL.
+   */
+  bool IsNull(size_t column_index) const;
+
+  /**
+   * @brief Get the string representation of the cell at current row (any type).
+   */
+  std::string GetValueAsString(size_t column_index) const;
+
+  int32_t GetInt32(size_t column_index) const;
+  uint32_t GetUInt32(size_t column_index) const;
+  int64_t GetInt64(size_t column_index) const;
+  uint64_t GetUInt64(size_t column_index) const;
+  float GetFloat(size_t column_index) const;
+  double GetDouble(size_t column_index) const;
+  std::string GetString(size_t column_index) const;
+  bool GetBool(size_t column_index) const;
+
+  /**
+   * @brief Get the number of columns.
+   */
+  size_t ColumnCount() const;
+
+  /**
+   * @brief Get column names from schema.
+   */
+  std::vector<std::string> ColumnNames() const;
+
+  // ---------------------------------------------------------------------------
+  // Existing interface (kept for backward compatibility)
+  // ---------------------------------------------------------------------------
 
   /**
    * @brief Convert entire result set to string.
@@ -147,24 +164,12 @@ class QueryResult {
    */
   std::string Serialize() const;
 
-  /**
-   * @brief Begin iterator for range-for traversal by row index.
-   */
-  const_iterator begin() const { return const_iterator(response_.get(), 0); }
-
-  /**
-   * @brief End iterator for range-for traversal by row index.
-   */
-  const_iterator end() const {
-    return const_iterator(response_.get(),
-                          static_cast<size_t>(response_->row_count()));
-  }
-
-  const_iterator cbegin() const { return begin(); }
-  const_iterator cend() const { return end(); }
-
  private:
+  void ValidateCursorAccess(size_t column_index) const;
+  const neug::Array& GetColumn(size_t column_index) const;
+
   std::shared_ptr<neug::QueryResponse> response_;
+  size_t current_row_index_ = 0;
 };
 
 }  // namespace neug

@@ -10,10 +10,66 @@ Lightweight wrapper around protobuf `QueryResponse`.
 - accessing response schema (``result_schema()``),
 - serializing/deserializing (``Serialize()`` / ``From()``),
 - debugging output (``ToString()``),
-- read-only row traversal via C++ range-for (``begin()`/end()`).
-Note: traversal currently provides row index + column access to raw protobuf arrays through ``RowView``, rather than materialized typed cell values.
+- cursor-based row traversal via ``HasNext()`` / ``Next()``,
+- typed cell access via ``GetInt32()``, ``GetString()``, etc.
 
-### Public Methods
+### Cursor Traversal
+
+#### `HasNext() const`
+
+Check whether there are more rows to consume.
+
+#### `Next()`
+
+Advance the cursor to the next row. Throws if no more rows are available.
+
+#### `Reset()`
+
+Reset the internal cursor back to the first row.
+
+#### `CurrentRowIndex() const`
+
+Return the current cursor position (0-based row index).
+
+### Typed Value Accessors
+
+All getters read from the **current cursor row** by column index.
+
+#### `IsNull(size_t column_index) const`
+
+Check whether the cell at current row is NULL.
+
+#### `GetValueAsString(size_t column_index) const`
+
+Get the string representation of the cell value (any type).
+
+#### `GetInt32(size_t column_index) const`
+
+#### `GetUInt32(size_t column_index) const`
+
+#### `GetInt64(size_t column_index) const`
+
+#### `GetUInt64(size_t column_index) const`
+
+#### `GetFloat(size_t column_index) const`
+
+#### `GetDouble(size_t column_index) const`
+
+#### `GetString(size_t column_index) const`
+
+#### `GetBool(size_t column_index) const`
+
+### Metadata
+
+#### `ColumnCount() const`
+
+Get the number of columns.
+
+#### `ColumnNames() const`
+
+Get column names from schema.
+
+### Other Methods
 
 #### `ToString() const`
 
@@ -41,11 +97,17 @@ Useful when callers need to extend the lifetime of the response beyond the `Quer
 
 Serialize entire result set to string.
 
-#### `begin() const`
+### Example
 
-Begin iterator for range-for traversal by row index.
+```cpp
+auto result = QueryResult::From(serialized);
 
-#### `end() const`
-
-End iterator for range-for traversal by row index.
+while (result.HasNext()) {
+    if (!result.IsNull(0)) {
+        int32_t id = result.GetInt32(0);
+        std::string name = result.GetString(1);
+    }
+    result.Next();
+}
+```
 

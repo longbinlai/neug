@@ -163,29 +163,11 @@ static void get_value(const neug::Array& array, size_t row_index,
     break;
   }
   default: {
-    LOG(WARNING) << "Unsupported array type in RowView: "
+    LOG(WARNING) << "Unsupported array type in QueryResult: "
                  << array.typed_array_case();
     ss << "null";
   }
   }
-}
-
-std::string RowView::ToString() const {
-  if (response_ == nullptr) {
-    THROW_RUNTIME_ERROR("RowView has null response");
-  }
-  if (row_index_ >= response_->row_count()) {
-    THROW_RUNTIME_ERROR("Row index out of range");
-  }
-  std::stringstream ss;
-  for (int i = 0; i < response_->arrays_size(); ++i) {
-    const auto& array = response_->arrays(i);
-    get_value(array, row_index_, ss);
-    if (i < response_->arrays_size() - 1) {
-      ss << ", ";
-    }
-  }
-  return ss.str();
 }
 
 std::string QueryResult::ToString() const { return response_->DebugString(); }
@@ -209,6 +191,208 @@ std::string QueryResult::Serialize() const {
     THROW_RUNTIME_ERROR("Failed to serialize QueryResponse to string");
   }
   return serialized_response;
+}
+
+// ---------------------------------------------------------------------------
+// Cursor-based traversal
+// ---------------------------------------------------------------------------
+
+bool QueryResult::HasNext() const {
+  return current_row_index_ < static_cast<size_t>(response_->row_count());
+}
+
+void QueryResult::Next() {
+  if (!HasNext()) {
+    THROW_RUNTIME_ERROR("No more rows available in QueryResult");
+  }
+  ++current_row_index_;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+void QueryResult::ValidateCursorAccess(size_t column_index) const {
+  if (current_row_index_ >= static_cast<size_t>(response_->row_count())) {
+    THROW_RUNTIME_ERROR("Cursor past end of result set (row " +
+                        std::to_string(current_row_index_) + " >= " +
+                        std::to_string(response_->row_count()) + ")");
+  }
+  if (column_index >= static_cast<size_t>(response_->arrays_size())) {
+    THROW_RUNTIME_ERROR("Column index out of range: " +
+                        std::to_string(column_index) + " >= " +
+                        std::to_string(response_->arrays_size()));
+  }
+}
+
+const neug::Array& QueryResult::GetColumn(size_t column_index) const {
+  return response_->arrays(static_cast<int>(column_index));
+}
+
+size_t QueryResult::ColumnCount() const {
+  return static_cast<size_t>(response_->arrays_size());
+}
+
+std::vector<std::string> QueryResult::ColumnNames() const {
+  const auto& schema = response_->schema();
+  std::vector<std::string> names(schema.name_size());
+  for (int i = 0; i < schema.name_size(); ++i) {
+    names[i] = schema.name(i);
+  }
+  return names;
+}
+
+// ---------------------------------------------------------------------------
+// Null check
+// ---------------------------------------------------------------------------
+
+bool QueryResult::IsNull(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+
+  const std::string* validity = nullptr;
+  switch (array.typed_array_case()) {
+  case neug::Array::kInt32Array:
+    validity = &array.int32_array().validity();
+    break;
+  case neug::Array::kUint32Array:
+    validity = &array.uint32_array().validity();
+    break;
+  case neug::Array::kInt64Array:
+    validity = &array.int64_array().validity();
+    break;
+  case neug::Array::kUint64Array:
+    validity = &array.uint64_array().validity();
+    break;
+  case neug::Array::kFloatArray:
+    validity = &array.float_array().validity();
+    break;
+  case neug::Array::kDoubleArray:
+    validity = &array.double_array().validity();
+    break;
+  case neug::Array::kStringArray:
+    validity = &array.string_array().validity();
+    break;
+  case neug::Array::kBoolArray:
+    validity = &array.bool_array().validity();
+    break;
+  case neug::Array::kDateArray:
+    validity = &array.date_array().validity();
+    break;
+  case neug::Array::kTimestampArray:
+    validity = &array.timestamp_array().validity();
+    break;
+  case neug::Array::kIntervalArray:
+    validity = &array.interval_array().validity();
+    break;
+  case neug::Array::kVertexArray:
+    validity = &array.vertex_array().validity();
+    break;
+  case neug::Array::kEdgeArray:
+    validity = &array.edge_array().validity();
+    break;
+  case neug::Array::kPathArray:
+    validity = &array.path_array().validity();
+    break;
+  default:
+    return true;
+  }
+  return !is_valid(*validity, current_row_index_);
+}
+
+// ---------------------------------------------------------------------------
+// GetValueAsString
+// ---------------------------------------------------------------------------
+
+std::string QueryResult::GetValueAsString(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  std::stringstream ss;
+  get_value(GetColumn(column_index), current_row_index_, ss);
+  return ss.str();
+}
+
+// ---------------------------------------------------------------------------
+// Typed getters
+// ---------------------------------------------------------------------------
+
+int32_t QueryResult::GetInt32(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kInt32Array) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not Int32Array");
+  }
+  return array.int32_array().values(static_cast<int>(current_row_index_));
+}
+
+uint32_t QueryResult::GetUInt32(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kUint32Array) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not UInt32Array");
+  }
+  return array.uint32_array().values(static_cast<int>(current_row_index_));
+}
+
+int64_t QueryResult::GetInt64(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kInt64Array) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not Int64Array");
+  }
+  return array.int64_array().values(static_cast<int>(current_row_index_));
+}
+
+uint64_t QueryResult::GetUInt64(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kUint64Array) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not UInt64Array");
+  }
+  return array.uint64_array().values(static_cast<int>(current_row_index_));
+}
+
+float QueryResult::GetFloat(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kFloatArray) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not FloatArray");
+  }
+  return array.float_array().values(static_cast<int>(current_row_index_));
+}
+
+double QueryResult::GetDouble(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kDoubleArray) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not DoubleArray");
+  }
+  return array.double_array().values(static_cast<int>(current_row_index_));
+}
+
+std::string QueryResult::GetString(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kStringArray) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not StringArray");
+  }
+  return array.string_array().values(static_cast<int>(current_row_index_));
+}
+
+bool QueryResult::GetBool(size_t column_index) const {
+  ValidateCursorAccess(column_index);
+  const auto& array = GetColumn(column_index);
+  if (array.typed_array_case() != neug::Array::kBoolArray) {
+    THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
+                        " is not BoolArray");
+  }
+  return array.bool_array().values(static_cast<int>(current_row_index_));
 }
 
 }  // namespace neug
