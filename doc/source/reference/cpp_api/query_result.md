@@ -33,27 +33,27 @@ Return the current cursor position (0-based row index).
 
 ### Typed Value Accessors
 
-All getters read from the **current cursor row** by column index.
+All getters read from the **current cursor row**. Each method has two overloads: by column index or by column name.
 
-#### `IsNull(size_t column_index) const`
+#### `IsNull(size_t column_index)` / `IsNull(const std::string& column_name)`
 
 Check whether the cell at current row is NULL.
 
-#### `GetInt32(size_t column_index) const`
+#### `GetInt32(...)` — accepts `int32`, `bool`
 
-#### `GetUInt32(size_t column_index) const`
+#### `GetUInt32(...)` — accepts `uint32`, `bool`
 
-#### `GetInt64(size_t column_index) const`
+#### `GetInt64(...)` — accepts `int64`, `int32`, `uint32`, `bool`
 
-#### `GetUInt64(size_t column_index) const`
+#### `GetUInt64(...)` — accepts `uint64`, `uint32`, `bool`
 
-#### `GetFloat(size_t column_index) const`
+#### `GetFloat(...)` — accepts `float`, `int32`, `uint32`, `bool`
 
-#### `GetDouble(size_t column_index) const`
+#### `GetDouble(...)` — accepts `double`, `float`, `int32`, `uint32`, `int64`, `uint64`, `bool`
 
-#### `GetString(size_t column_index) const`
+#### `GetString(...)` — accepts **any type** (falls back to string representation)
 
-#### `GetBool(size_t column_index) const`
+#### `GetBool(...)` — accepts `bool` only
 
 ### Metadata
 
@@ -98,10 +98,22 @@ Serialize entire result set to string.
 ```cpp
 auto result = QueryResult::From(serialized);
 
+// Access by column index
 while (result.HasNext()) {
     if (!result.IsNull(0)) {
         int32_t id = result.GetInt32(0);
         std::string name = result.GetString(1);
+    }
+    result.Next();
+}
+
+// Access by column name
+result.Reset();
+while (result.HasNext()) {
+    if (!result.IsNull("id")) {
+        int32_t id = result.GetInt32("id");
+        std::string name = result.GetString("name");
+        double score = result.GetDouble("score");
     }
     result.Next();
 }
