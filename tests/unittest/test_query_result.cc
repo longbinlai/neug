@@ -21,6 +21,7 @@
 
 #include "neug/main/query_result.h"
 #include "neug/generated/proto/response/response.pb.h"
+#include "neug/utils/exception/exception.h"
 
 namespace neug {
 
