@@ -255,6 +255,43 @@ TEST(QueryResultTest, EmptyResult) {
   EXPECT_THROW(result.Next(), neug::exception::Exception);
 }
 
+TEST(QueryResultTest, GetByColumnName) {
+  auto result = BuildTestResult();
+
+  EXPECT_EQ(result.GetInt32("id"), 10);
+  EXPECT_EQ(result.GetString("name"), "alice");
+  EXPECT_DOUBLE_EQ(result.GetDouble("score"), 1.1);
+  EXPECT_TRUE(result.GetBool("active"));
+
+  result.Next();
+  EXPECT_EQ(result.GetInt32("id"), 20);
+  EXPECT_EQ(result.GetString("name"), "bob");
+  EXPECT_FALSE(result.GetBool("active"));
+}
+
+TEST(QueryResultTest, GetByColumnNameWidening) {
+  auto result = BuildTestResult();
+
+  // Int32 column read as Int64 by name
+  EXPECT_EQ(result.GetInt64("id"), 10);
+  // Int32 column read as Double by name
+  EXPECT_DOUBLE_EQ(result.GetDouble("id"), 10.0);
+}
+
+TEST(QueryResultTest, IsNullByColumnName) {
+  auto result = BuildResultWithNull();
+
+  EXPECT_FALSE(result.IsNull("val"));
+  result.Next();
+  EXPECT_TRUE(result.IsNull("val"));
+}
+
+TEST(QueryResultTest, InvalidColumnNameThrows) {
+  auto result = BuildTestResult();
+  EXPECT_THROW(result.GetInt32("nonexistent"), neug::exception::Exception);
+  EXPECT_THROW(result.IsNull("nonexistent"), neug::exception::Exception);
+}
+
 TEST(QueryResultTest, ColumnIndexOutOfRange) {
   auto result = BuildTestResult();
   EXPECT_THROW(result.GetInt32(99), neug::exception::Exception);

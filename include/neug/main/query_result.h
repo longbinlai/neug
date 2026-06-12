@@ -93,22 +93,32 @@ class QueryResult {
   size_t CurrentRowIndex() const { return current_row_index_; }
 
   // ---------------------------------------------------------------------------
-  // Typed value accessors — read from the current cursor row by column index
+  // Typed value accessors — read from the current cursor row
+  // Supports both column index and column name.
   // ---------------------------------------------------------------------------
 
   /**
    * @brief Check whether the cell at current row is NULL.
    */
   bool IsNull(size_t column_index) const;
+  bool IsNull(const std::string& column_name) const;
 
   int32_t GetInt32(size_t column_index) const;
+  int32_t GetInt32(const std::string& column_name) const;
   uint32_t GetUInt32(size_t column_index) const;
+  uint32_t GetUInt32(const std::string& column_name) const;
   int64_t GetInt64(size_t column_index) const;
+  int64_t GetInt64(const std::string& column_name) const;
   uint64_t GetUInt64(size_t column_index) const;
+  uint64_t GetUInt64(const std::string& column_name) const;
   float GetFloat(size_t column_index) const;
+  float GetFloat(const std::string& column_name) const;
   double GetDouble(size_t column_index) const;
+  double GetDouble(const std::string& column_name) const;
   std::string GetString(size_t column_index) const;
+  std::string GetString(const std::string& column_name) const;
   bool GetBool(size_t column_index) const;
+  bool GetBool(const std::string& column_name) const;
 
   /**
    * @brief Get the number of columns.
@@ -161,6 +171,7 @@ class QueryResult {
 
  private:
   void ValidateCursorAccess(size_t column_index) const;
+  size_t GetColumnIndex(const std::string& column_name) const;
   const neug::Array& GetColumn(size_t column_index) const;
 
   std::shared_ptr<neug::QueryResponse> response_;

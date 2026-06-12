@@ -225,6 +225,16 @@ void QueryResult::ValidateCursorAccess(size_t column_index) const {
   }
 }
 
+size_t QueryResult::GetColumnIndex(const std::string& column_name) const {
+  const auto& schema = response_->schema();
+  for (int i = 0; i < schema.name_size(); ++i) {
+    if (schema.name(i) == column_name) {
+      return static_cast<size_t>(i);
+    }
+  }
+  THROW_RUNTIME_ERROR("Column not found: " + column_name);
+}
+
 const neug::Array& QueryResult::GetColumn(size_t column_index) const {
   return response_->arrays(static_cast<int>(column_index));
 }
@@ -442,6 +452,46 @@ bool QueryResult::GetBool(size_t column_index) const {
                         " cannot be converted to Bool");
   }
   return array.bool_array().values(static_cast<int>(current_row_index_));
+}
+
+// ---------------------------------------------------------------------------
+// Column-name overloads (delegate to index-based versions)
+// ---------------------------------------------------------------------------
+
+bool QueryResult::IsNull(const std::string& column_name) const {
+  return IsNull(GetColumnIndex(column_name));
+}
+
+int32_t QueryResult::GetInt32(const std::string& column_name) const {
+  return GetInt32(GetColumnIndex(column_name));
+}
+
+uint32_t QueryResult::GetUInt32(const std::string& column_name) const {
+  return GetUInt32(GetColumnIndex(column_name));
+}
+
+int64_t QueryResult::GetInt64(const std::string& column_name) const {
+  return GetInt64(GetColumnIndex(column_name));
+}
+
+uint64_t QueryResult::GetUInt64(const std::string& column_name) const {
+  return GetUInt64(GetColumnIndex(column_name));
+}
+
+float QueryResult::GetFloat(const std::string& column_name) const {
+  return GetFloat(GetColumnIndex(column_name));
+}
+
+double QueryResult::GetDouble(const std::string& column_name) const {
+  return GetDouble(GetColumnIndex(column_name));
+}
+
+std::string QueryResult::GetString(const std::string& column_name) const {
+  return GetString(GetColumnIndex(column_name));
+}
+
+bool QueryResult::GetBool(const std::string& column_name) const {
+  return GetBool(GetColumnIndex(column_name));
 }
 
 }  // namespace neug
