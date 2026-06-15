@@ -16,9 +16,9 @@ auto conn = db.Connect();
 auto result = conn->Query("MATCH (n:Person) RETURN n LIMIT 10");
 // Process results
 auto& qr = result.value();
-while (qr.HasNext()) {
-  std::cout << qr.GetString(0) << std::endl;
-  qr.Next();
+while (qr.hasNext()) {
+  std::cout << qr.GetCurrentRowAsString() << std::endl;
+  qr.next();
 }
 // Close database (persists data)
 db.Close();

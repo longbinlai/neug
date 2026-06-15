@@ -44,9 +44,9 @@ int main() {
   // Process results
   if (result.has_value()) {
     auto& qr = result.value();
-    while (qr.HasNext()) {
-      std::cout << qr.GetString(0) << std::endl;
-      qr.Next();
+    while (qr.hasNext()) {
+      std::cout << qr.GetCurrentRowAsString() << std::endl;
+      qr.next();
     }
   }
 

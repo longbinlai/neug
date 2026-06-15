@@ -94,6 +94,40 @@ static QueryResult BuildResultWithNull() {
   return QueryResult::From(std::move(serialized));
 }
 
+// Build a result with date / timestamp / interval columns.
+static QueryResult BuildTemporalResult() {
+  neug::QueryResponse response;
+  response.set_row_count(2);
+
+  auto* schema = response.mutable_schema();
+  schema->add_name("d");
+  schema->add_name("ts");
+  schema->add_name("iv");
+
+  // Column 0: DateArray
+  auto* col0 = response.add_arrays();
+  auto* date_arr = col0->mutable_date_array();
+  date_arr->add_values(0);              // 1970-01-01
+  date_arr->add_values(86400LL * 1000); // 1970-01-02 (ms since epoch)
+
+  // Column 1: TimestampArray
+  auto* col1 = response.add_arrays();
+  auto* ts_arr = col1->mutable_timestamp_array();
+  ts_arr->add_values(0);
+  ts_arr->add_values(1000);
+
+  // Column 2: IntervalArray (string-backed; neug stores Interval::to_string()
+  // output, e.g. "1 day", not ISO-8601 durations)
+  auto* col2 = response.add_arrays();
+  auto* iv_arr = col2->mutable_interval_array();
+  iv_arr->add_values("1 day");
+  iv_arr->add_values("1 hour");
+
+  std::string serialized;
+  response.SerializeToString(&serialized);
+  return QueryResult::From(std::move(serialized));
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -114,22 +148,22 @@ TEST(QueryResultTest, LengthAndColumnInfo) {
 TEST(QueryResultTest, CursorTraversal) {
   auto result = BuildTestResult();
 
-  EXPECT_TRUE(result.HasNext());
+  EXPECT_TRUE(result.hasNext());
   EXPECT_EQ(result.CurrentRowIndex(), 0u);
 
-  result.Next();
+  result.next();
   EXPECT_EQ(result.CurrentRowIndex(), 1u);
 
-  result.Next();
-  result.Next();
-  EXPECT_FALSE(result.HasNext());
+  result.next();
+  result.next();
+  EXPECT_FALSE(result.hasNext());
 
   // Next() past end should throw
-  EXPECT_THROW(result.Next(), neug::exception::Exception);
+  EXPECT_THROW(result.next(), neug::exception::Exception);
 
   // Reset brings cursor back
   result.Reset();
-  EXPECT_TRUE(result.HasNext());
+  EXPECT_TRUE(result.hasNext());
   EXPECT_EQ(result.CurrentRowIndex(), 0u);
 }
 
@@ -142,14 +176,14 @@ TEST(QueryResultTest, TypedGetters) {
   EXPECT_DOUBLE_EQ(result.GetDouble(2), 1.1);
   EXPECT_TRUE(result.GetBool(3));
 
-  result.Next();
+  result.next();
   // Row 1
   EXPECT_EQ(result.GetInt32(0), 20);
   EXPECT_EQ(result.GetString(1), "bob");
   EXPECT_DOUBLE_EQ(result.GetDouble(2), 2.2);
   EXPECT_FALSE(result.GetBool(3));
 
-  result.Next();
+  result.next();
   // Row 2
   EXPECT_EQ(result.GetInt32(0), 30);
   EXPECT_EQ(result.GetString(1), "charlie");
@@ -187,7 +221,7 @@ TEST(QueryResultTest, ImplicitWideningBoolToInt32) {
   // BoolArray column (col 3) read as Int32
   EXPECT_EQ(result.GetInt32(3), 1);  // true → 1
 
-  result.Next();
+  result.next();
   EXPECT_EQ(result.GetInt32(3), 0);  // false → 0
 }
 
@@ -219,7 +253,7 @@ TEST(QueryResultTest, IsNull) {
   EXPECT_FALSE(result.IsNull(0));
   EXPECT_EQ(result.GetInt32(0), 42);
 
-  result.Next();
+  result.next();
   // Row 1: null
   EXPECT_TRUE(result.IsNull(0));
 }
@@ -252,8 +286,8 @@ TEST(QueryResultTest, EmptyResult) {
   auto result = QueryResult::From(std::move(serialized));
 
   EXPECT_EQ(result.length(), 0u);
-  EXPECT_FALSE(result.HasNext());
-  EXPECT_THROW(result.Next(), neug::exception::Exception);
+  EXPECT_FALSE(result.hasNext());
+  EXPECT_THROW(result.next(), neug::exception::Exception);
 }
 
 TEST(QueryResultTest, GetByColumnName) {
@@ -264,7 +298,7 @@ TEST(QueryResultTest, GetByColumnName) {
   EXPECT_DOUBLE_EQ(result.GetDouble("score"), 1.1);
   EXPECT_TRUE(result.GetBool("active"));
 
-  result.Next();
+  result.next();
   EXPECT_EQ(result.GetInt32("id"), 20);
   EXPECT_EQ(result.GetString("name"), "bob");
   EXPECT_FALSE(result.GetBool("active"));
@@ -283,7 +317,7 @@ TEST(QueryResultTest, IsNullByColumnName) {
   auto result = BuildResultWithNull();
 
   EXPECT_FALSE(result.IsNull("val"));
-  result.Next();
+  result.next();
   EXPECT_TRUE(result.IsNull("val"));
 }
 
@@ -297,6 +331,54 @@ TEST(QueryResultTest, ColumnIndexOutOfRange) {
   auto result = BuildTestResult();
   EXPECT_THROW(result.GetInt32(99), neug::exception::Exception);
   EXPECT_THROW(result.IsNull(99), neug::exception::Exception);
+}
+
+TEST(QueryResultTest, TemporalAsRawInt64) {
+  auto result = BuildTemporalResult();
+
+  // Date / Timestamp columns expose their raw int64 epoch value via GetInt64().
+  EXPECT_EQ(result.GetInt64(0), 0);
+  EXPECT_EQ(result.GetInt64("d"), 0);
+  EXPECT_EQ(result.GetInt64(1), 0);
+  EXPECT_EQ(result.GetInt64("ts"), 0);
+
+  result.next();
+  EXPECT_EQ(result.GetInt64(0), 86400LL * 1000);
+  EXPECT_EQ(result.GetInt64(1), 1000);
+
+  // Interval is string-backed and has no int64 representation.
+  EXPECT_THROW(result.GetInt64(2), neug::exception::Exception);
+}
+
+TEST(QueryResultTest, TemporalGetStringFallback) {
+  auto result = BuildTemporalResult();
+
+  // Date / Timestamp / Interval are all reachable via GetString().
+  EXPECT_FALSE(result.GetString(0).empty());  // canonical date string
+  EXPECT_FALSE(result.GetString(1).empty());  // canonical datetime string
+  EXPECT_EQ(result.GetString(2), "1 day");
+}
+
+TEST(QueryResultTest, GetCurrentRowAsString) {
+  auto result = BuildTestResult();
+
+  EXPECT_EQ(result.GetCurrentRowAsString(), "10, alice, 1.1, true");
+
+  result.next();
+  EXPECT_EQ(result.GetCurrentRowAsString(), "20, bob, 2.2, false");
+
+  // Past-end cursor should throw.
+  result.next();
+  result.next();
+  EXPECT_FALSE(result.hasNext());
+  EXPECT_THROW(result.GetCurrentRowAsString(), neug::exception::Exception);
+}
+
+TEST(QueryResultTest, GetCurrentRowAsStringWithNull) {
+  auto result = BuildResultWithNull();
+  EXPECT_EQ(result.GetCurrentRowAsString(), "42");
+  result.next();
+  EXPECT_EQ(result.GetCurrentRowAsString(), "null");
 }
 
 }  // namespace neug

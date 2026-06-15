@@ -13,9 +13,9 @@ auto conn = db.Connect();
 // Execute a read query
 auto result = conn->Query("MATCH (n:Person) RETURN n.name LIMIT 10", "read");
 auto& qr = result.value();
-while (qr.HasNext()) {
-  // Process current row...
-  qr.Next();
+while (qr.hasNext()) {
+  std::cout << qr.GetCurrentRowAsString() << std::endl;
+  qr.next();
 }
 // Execute an insert query
 conn->Query("CREATE (p:Person {name: 'Alice', age: 30})", "insert");
@@ -64,9 +64,9 @@ result = conn->Query("MATCH (p:Person) WHERE p.age > $min_age RETURN p",
 // Process results
 if (result.has_value()) {
   auto& qr = result.value();
-  while (qr.HasNext()) {
+  while (qr.hasNext()) {
     // Access columns via qr.GetString(0), qr.GetInt32(1), etc.
-    qr.Next();
+    qr.next();
   }
 } else {
   std::cerr << "Query failed: " << result.error().message() << std::endl;

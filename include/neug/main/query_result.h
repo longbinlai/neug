@@ -34,7 +34,7 @@ namespace neug {
  * - accessing response schema (`result_schema()`),
  * - serializing/deserializing (`Serialize()` / `From()`),
  * - debugging output (`ToString()`),
- * - cursor-based row traversal via `HasNext()` / `Next()`,
+ * - cursor-based row traversal via `hasNext()` / `next()`,
  * - typed cell access via `GetInt32()`, `GetString()`, etc.
  */
 
@@ -73,14 +73,14 @@ class QueryResult {
   /**
    * @brief Check whether there are more rows to consume.
    */
-  bool HasNext() const;
+  bool hasNext() const;
 
   /**
    * @brief Advance the cursor to the next row.
    *
-   * Throws if no more rows are available (check HasNext() first).
+   * Throws if no more rows are available (check hasNext() first).
    */
-  void Next();
+  void next();
 
   /**
    * @brief Reset the internal cursor back to the first row.
@@ -138,6 +138,15 @@ class QueryResult {
    * @brief Convert entire result set to string.
    */
   std::string ToString() const;
+
+  /**
+   * @brief Convert the current cursor row to a human-readable string.
+   *
+   * Produces a comma-separated list of the row's column values (NULL cells are
+   * rendered as "null"). Useful for printing rows while iterating with
+   * hasNext()/next(). Throws if the cursor is past the end of the result set.
+   */
+  std::string GetCurrentRowAsString() const;
 
   /**
    * @brief Get total number of rows.

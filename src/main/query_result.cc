@@ -172,6 +172,22 @@ static void get_value(const neug::Array& array, size_t row_index,
 
 std::string QueryResult::ToString() const { return response_->DebugString(); }
 
+std::string QueryResult::GetCurrentRowAsString() const {
+  if (current_row_index_ >= static_cast<size_t>(response_->row_count())) {
+    THROW_RUNTIME_ERROR("Cursor past end of result set (row " +
+                        std::to_string(current_row_index_) + " >= " +
+                        std::to_string(response_->row_count()) + ")");
+  }
+  std::stringstream ss;
+  for (int i = 0; i < response_->arrays_size(); ++i) {
+    if (i > 0) {
+      ss << ", ";
+    }
+    get_value(response_->arrays(i), current_row_index_, ss);
+  }
+  return ss.str();
+}
+
 QueryResult QueryResult::From(const std::string& serialized_table) {
   return From(std::string(serialized_table));
 }
@@ -197,12 +213,12 @@ std::string QueryResult::Serialize() const {
 // Cursor-based traversal
 // ---------------------------------------------------------------------------
 
-bool QueryResult::HasNext() const {
+bool QueryResult::hasNext() const {
   return current_row_index_ < static_cast<size_t>(response_->row_count());
 }
 
-void QueryResult::Next() {
-  if (!HasNext()) {
+void QueryResult::next() {
+  if (!hasNext()) {
     THROW_RUNTIME_ERROR("No more rows available in QueryResult");
   }
   ++current_row_index_;
@@ -320,6 +336,12 @@ bool QueryResult::IsNull(size_t column_index) const {
 //   uint64 → uint64, double
 //   float  → float, double
 //   bool   → int32, int64, uint32, uint64
+//   date / timestamp → int64 (raw epoch value as stored in the protobuf)
+//
+// Temporal columns (DATE / TIMESTAMP / INTERVAL) are not exposed as dedicated
+// typed objects to avoid leaking internal representations into the public API.
+// They are accessible as a human-readable string via GetString(), and DATE /
+// TIMESTAMP additionally expose their raw int64 epoch value via GetInt64().
 // ---------------------------------------------------------------------------
 
 int32_t QueryResult::GetInt32(size_t column_index) const {
@@ -365,6 +387,10 @@ int64_t QueryResult::GetInt64(size_t column_index) const {
     return static_cast<int64_t>(array.uint32_array().values(row));
   case neug::Array::kBoolArray:
     return array.bool_array().values(row) ? 1 : 0;
+  case neug::Array::kDateArray:
+    return array.date_array().values(row);
+  case neug::Array::kTimestampArray:
+    return array.timestamp_array().values(row);
   default:
     THROW_RUNTIME_ERROR("Column " + std::to_string(column_index) +
                         " cannot be converted to Int64");
