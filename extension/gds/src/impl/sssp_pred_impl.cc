@@ -16,6 +16,7 @@
 
 #include "impl/sssp_pred_impl.h"
 
+#include <algorithm>
 #include <memory>
 #include <queue>
 #include <utility>
@@ -24,6 +25,7 @@
 #include "neug/execution/common/columns/value_columns.h"
 #include "neug/execution/common/columns/vertex_columns.h"
 #include "neug/execution/expression/predicates.h"
+#include "utils/path_utils.h"
 
 namespace neug {
 namespace gds {
@@ -32,7 +34,7 @@ SSSPPred::SSSPPred(const StorageReadInterface& graph, label_t vertex_label,
                    label_t edge_label, vid_t source, bool directed,
                    const std::string& edge_weight_prop, int concurrency,
                    execution::ExprBase* vertex_pred,
-                   execution::ExprBase* edge_pred)
+                   execution::ExprBase* edge_pred, bool return_path)
     : graph_(graph),
       vertex_label_(vertex_label),
       edge_label_(edge_label),
@@ -40,6 +42,7 @@ SSSPPred::SSSPPred(const StorageReadInterface& graph, label_t vertex_label,
       directed_(directed),
       edge_weight_prop_(edge_weight_prop),
       concurrency_(concurrency),
+      return_path_(return_path),
       vertex_pred_(vertex_pred),
       edge_pred_(edge_pred) {}
 
@@ -53,6 +56,14 @@ void SSSPPred::compute() {
   distances_.reset(new double[n]);
   for (size_t i = 0; i < n; ++i) {
     distances_[i] = -1.0;
+  }
+
+  if (return_path_) {
+    predecessors_.reset(new vid_t[n]);
+    for (size_t i = 0; i < n; ++i) {
+      predecessors_[i] = std::numeric_limits<vid_t>::max();
+    }
+    predecessors_[source_] = source_;
   }
 
   std::unique_ptr<execution::GeneralPred> vpred;
@@ -118,6 +129,9 @@ void SSSPPred::compute() {
       double cand = dist + weight;
       if (distances_[w] < 0 || cand < distances_[w]) {
         distances_[w] = cand;
+        if (return_path_) {
+          predecessors_[w] = u;
+        }
         pq.push({cand, w});
       }
     };
@@ -135,11 +149,28 @@ void SSSPPred::compute() {
   }
 }
 
-void SSSPPred::sink(execution::Context& ctx, int node_alias,
-                    int distance_alias) {
+void SSSPPred::sink(execution::Context& ctx, int node_alias, int distance_alias,
+                    int path_alias) {
   execution::MSVertexColumnBuilder node_builder(vertex_label_);
   execution::ValueColumnBuilder<double> distance_builder;
   distance_builder.reserve(vertices_.size());
+
+  // Build path column BEFORE moving vertices_
+  std::shared_ptr<execution::IContextColumn> path_column;
+  if (return_path_ && path_alias >= 0) {
+    execution::PathColumnBuilder path_builder;
+    for (vid_t v : vertices_) {
+      if (distances_[v] < 0) {
+        path_builder.push_back_null();
+      } else {
+        auto path = reconstruct_path(
+            v, source_, PlainPredecessorAccessor{predecessors_.get()},
+            vertex_label_, edge_label_, directed_, graph_);
+        path_builder.push_back_opt(std::move(path));
+      }
+    }
+    path_column = path_builder.finish();
+  }
 
   for (vid_t v : vertices_) {
     distance_builder.push_back_opt(distances_[v]);
@@ -149,6 +180,11 @@ void SSSPPred::sink(execution::Context& ctx, int node_alias,
   execution::DataChunk chunk;
   chunk.set(node_alias, node_builder.finish());
   chunk.set(distance_alias, distance_builder.finish());
+
+  if (path_column) {
+    chunk.set(path_alias, path_column);
+  }
+
   ctx.append_chunk(std::move(chunk));
 }
 

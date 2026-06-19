@@ -21,6 +21,7 @@
 #include "impl/sssp_impl.h"
 #include "impl/sssp_pred_impl.h"
 #include "utils/option_utils.h"
+#include "utils/path_utils.h"
 #include "utils/subgraph_utils.h"
 
 namespace neug {
@@ -54,8 +55,10 @@ struct SSSPInput : public function::CallFuncInputBase {
   bool directed;
   std::string edge_weight;
   int32_t concurrency;
+  bool return_path;
   int32_t node_alias;
   int32_t distance_alias;
+  int32_t path_alias;
 };
 
 std::unique_ptr<function::CallFuncInputBase> SSSPFunction::bind(
@@ -79,6 +82,10 @@ std::unique_ptr<function::CallFuncInputBase> SSSPFunction::bind(
 
   input->node_alias = plan.plan(op_idx).meta_data(0).alias();
   input->distance_alias = plan.plan(op_idx).meta_data(1).alias();
+  input->return_path = (plan.plan(op_idx).meta_data_size() >= 3);
+  input->path_alias = input->return_path
+                          ? plan.plan(op_idx).meta_data(2).alias()
+                          : -1;
 
   return input;
 }
@@ -105,15 +112,17 @@ execution::Context SSSPFunction::exec(const function::CallFuncInputBase& input,
     SSSPPred sssp(graph, sssp_input.vertex_label, sssp_input.edge_label,
                   source_vid, sssp_input.directed, sssp_input.edge_weight,
                   sssp_input.concurrency, sssp_input.vertex_pred.get(),
-                  sssp_input.edge_pred.get());
+                  sssp_input.edge_pred.get(), sssp_input.return_path);
     sssp.compute();
-    sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias);
+    sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias,
+              sssp_input.path_alias);
   } else {
     SSSP sssp(graph, sssp_input.vertex_label, sssp_input.edge_label, source_vid,
               sssp_input.directed, sssp_input.edge_weight,
-              sssp_input.concurrency);
+              sssp_input.concurrency, sssp_input.return_path);
     sssp.compute();
-    sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias);
+    sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias,
+              sssp_input.path_alias);
   }
   return ret;
 }
@@ -124,12 +133,14 @@ function::function_set SSSPFunction::getFunctionSet() {
       common::DataTypeId::kVarchar, common::DataTypeId::kUnknown};
   function::call_output_columns output_columns = {
       {"node", common::DataTypeId::kVertex},
-      {"distance", common::DataTypeId::kDouble}};
+      {"distance", common::DataTypeId::kDouble},
+      {"path", common::DataTypeId::kPath}};
 
   auto function = std::make_unique<function::GDSAlgoFunction>(name, input_types,
                                                               output_columns);
   function->bindFunc = bind;
   function->execFunc = exec;
+  wrapTableBindFuncWithPathFix(function.get());
   func_set.emplace_back(std::move(function));
   return func_set;
 }

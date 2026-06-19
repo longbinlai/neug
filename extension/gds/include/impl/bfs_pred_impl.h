@@ -35,10 +35,12 @@ class BFSPred {
  public:
   BFSPred(const StorageReadInterface& graph, label_t vertex_label,
           label_t edge_label, vid_t source, bool directed, int concurrency,
-          execution::ExprBase* vertex_pred, execution::ExprBase* edge_pred);
+          execution::ExprBase* vertex_pred, execution::ExprBase* edge_pred,
+          bool return_path = false);
 
   void compute();
-  void sink(execution::Context& ctx, int node_alias, int distance_alias);
+  void sink(execution::Context& ctx, int node_alias, int distance_alias,
+            int path_alias = -1);
 
  private:
   const StorageReadInterface& graph_;
@@ -47,10 +49,12 @@ class BFSPred {
   vid_t source_;
   bool directed_;
   int concurrency_;
+  bool return_path_;
   execution::ExprBase* vertex_pred_;
   execution::ExprBase* edge_pred_;
 
   std::unique_ptr<uint32_t[]> distances_;
+  std::unique_ptr<vid_t[]> predecessors_;
   vector_t<vid_t> vertices_;
 };
 

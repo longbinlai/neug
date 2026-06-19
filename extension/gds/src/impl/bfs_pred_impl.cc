@@ -16,6 +16,7 @@
 
 #include "impl/bfs_pred_impl.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -23,6 +24,7 @@
 #include "neug/execution/common/columns/value_columns.h"
 #include "neug/execution/common/columns/vertex_columns.h"
 #include "neug/execution/expression/predicates.h"
+#include "utils/path_utils.h"
 
 namespace neug {
 namespace gds {
@@ -30,13 +32,14 @@ namespace gds {
 BFSPred::BFSPred(const StorageReadInterface& graph, label_t vertex_label,
                  label_t edge_label, vid_t source, bool directed,
                  int concurrency, execution::ExprBase* vertex_pred,
-                 execution::ExprBase* edge_pred)
+                 execution::ExprBase* edge_pred, bool return_path)
     : graph_(graph),
       vertex_label_(vertex_label),
       edge_label_(edge_label),
       source_(source),
       directed_(directed),
       concurrency_(concurrency),
+      return_path_(return_path),
       vertex_pred_(vertex_pred),
       edge_pred_(edge_pred) {}
 
@@ -49,6 +52,14 @@ void BFSPred::compute() {
   distances_.reset(new uint32_t[n]);
   for (size_t i = 0; i < n; ++i) {
     distances_[i] = std::numeric_limits<uint32_t>::max();
+  }
+
+  if (return_path_) {
+    predecessors_.reset(new vid_t[n]);
+    for (size_t i = 0; i < n; ++i) {
+      predecessors_[i] = std::numeric_limits<vid_t>::max();
+    }
+    predecessors_[source_] = source_;
   }
 
   std::unique_ptr<execution::GeneralPred> vpred;
@@ -92,6 +103,9 @@ void BFSPred::compute() {
           return;
         }
         distances_[w] = level;
+        if (return_path_) {
+          predecessors_[w] = u;
+        }
         next.push_back(w);
       };
 
@@ -120,11 +134,28 @@ void BFSPred::compute() {
   }
 }
 
-void BFSPred::sink(execution::Context& ctx, int node_alias,
-                   int distance_alias) {
+void BFSPred::sink(execution::Context& ctx, int node_alias, int distance_alias,
+                   int path_alias) {
   execution::MSVertexColumnBuilder node_builder(vertex_label_);
   execution::ValueColumnBuilder<int64_t> distance_builder;
   distance_builder.reserve(vertices_.size());
+
+  // Build path column BEFORE moving vertices_
+  std::shared_ptr<execution::IContextColumn> path_column;
+  if (return_path_ && path_alias >= 0) {
+    execution::PathColumnBuilder path_builder;
+    for (vid_t v : vertices_) {
+      if (distances_[v] == std::numeric_limits<uint32_t>::max()) {
+        path_builder.push_back_null();
+      } else {
+        auto path = reconstruct_path(
+            v, source_, PlainPredecessorAccessor{predecessors_.get()},
+            vertex_label_, edge_label_, directed_, graph_);
+        path_builder.push_back_opt(std::move(path));
+      }
+    }
+    path_column = path_builder.finish();
+  }
 
   for (vid_t v : vertices_) {
     distance_builder.push_back_opt(
@@ -137,6 +168,11 @@ void BFSPred::sink(execution::Context& ctx, int node_alias,
   execution::DataChunk chunk;
   chunk.set(node_alias, node_builder.finish());
   chunk.set(distance_alias, distance_builder.finish());
+
+  if (path_column) {
+    chunk.set(path_alias, path_column);
+  }
+
   ctx.append_chunk(std::move(chunk));
 }
 

@@ -20,6 +20,7 @@
 #include "impl/bfs_pred_impl.h"
 #include "neug/execution/common/context.h"
 #include "utils/option_utils.h"
+#include "utils/path_utils.h"
 #include "utils/subgraph_utils.h"
 
 namespace neug {
@@ -52,8 +53,10 @@ struct BFSInput : public function::CallFuncInputBase {
   std::string source;
   int32_t concurrency;
   bool directed;
+  bool return_path;
   int32_t node_alias;
   int32_t distance_alias;
+  int32_t path_alias;
 };
 
 std::unique_ptr<function::CallFuncInputBase> BFSFunction::bind(
@@ -76,6 +79,10 @@ std::unique_ptr<function::CallFuncInputBase> BFSFunction::bind(
 
   input->node_alias = plan.plan(op_idx).meta_data(0).alias();
   input->distance_alias = plan.plan(op_idx).meta_data(1).alias();
+  input->return_path = (plan.plan(op_idx).meta_data_size() >= 3);
+  input->path_alias = input->return_path
+                          ? plan.plan(op_idx).meta_data(2).alias()
+                          : -1;
 
   return input;
 }
@@ -101,14 +108,18 @@ execution::Context BFSFunction::exec(const function::CallFuncInputBase& input,
   if (bfs_input.vertex_pred != nullptr || bfs_input.edge_pred != nullptr) {
     BFSPred bfs(graph, bfs_input.vertex_label, bfs_input.edge_label, source_vid,
                 bfs_input.directed, bfs_input.concurrency,
-                bfs_input.vertex_pred.get(), bfs_input.edge_pred.get());
+                bfs_input.vertex_pred.get(), bfs_input.edge_pred.get(),
+                bfs_input.return_path);
     bfs.compute();
-    bfs.sink(ret, bfs_input.node_alias, bfs_input.distance_alias);
+    bfs.sink(ret, bfs_input.node_alias, bfs_input.distance_alias,
+             bfs_input.path_alias);
   } else {
     BFS bfs(graph, bfs_input.vertex_label, bfs_input.edge_label, source_vid,
-            bfs_input.directed, bfs_input.concurrency);
+            bfs_input.directed, bfs_input.concurrency,
+            bfs_input.return_path);
     bfs.compute();
-    bfs.sink(ret, bfs_input.node_alias, bfs_input.distance_alias);
+    bfs.sink(ret, bfs_input.node_alias, bfs_input.distance_alias,
+             bfs_input.path_alias);
   }
   return ret;
 }
@@ -119,12 +130,14 @@ function::function_set BFSFunction::getFunctionSet() {
       common::DataTypeId::kVarchar, common::DataTypeId::kUnknown};
   function::call_output_columns outputColumns = {
       {"node", common::DataTypeId::kVertex},
-      {"distance", common::DataTypeId::kInt64}};
+      {"distance", common::DataTypeId::kInt64},
+      {"path", common::DataTypeId::kPath}};
 
   auto function = std::make_unique<function::GDSAlgoFunction>(name, inputTypes,
                                                               outputColumns);
   function->bindFunc = bind;
   function->execFunc = exec;
+  wrapTableBindFuncWithPathFix(function.get());
   funcSet.emplace_back(std::move(function));
   return funcSet;
 }

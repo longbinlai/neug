@@ -27,6 +27,7 @@
 #include "neug/execution/common/columns/value_columns.h"
 #include "neug/execution/common/columns/vertex_columns.h"
 #include "utils/parallel_utils.h"
+#include "utils/path_utils.h"
 #include "utils/subgraph_utils.h"
 
 namespace neug {
@@ -48,14 +49,16 @@ inline bool relax_distance(std::atomic<double>* ptr, double candidate) {
 
 SSSP::SSSP(const StorageReadInterface& graph, label_t vertex_label,
            label_t edge_label, vid_t source, bool directed,
-           const std::string& edge_weight_prop, int concurrency)
+           const std::string& edge_weight_prop, int concurrency,
+           bool return_path)
     : graph_(graph),
       vertex_label_(vertex_label),
       edge_label_(edge_label),
       source_(source),
       directed_(directed),
       has_edge_weight_(!edge_weight_prop.empty()),
-      concurrency_(concurrency) {
+      concurrency_(concurrency),
+      return_path_(return_path) {
   concurrency_ = std::max(concurrency_, 1);
 
   size_t vertex_count = graph_.GetVertexSet(vertex_label_).size();
@@ -64,6 +67,14 @@ SSSP::SSSP(const StorageReadInterface& graph, label_t vertex_label,
     distances_[i] = -1.0;
   }
   distances_[source_] = 0.0;
+
+  if (return_path_) {
+    predecessors_.reset(new vid_t[vertex_count]);
+    for (size_t i = 0; i < vertex_count; ++i) {
+      predecessors_[i] = std::numeric_limits<vid_t>::max();
+    }
+    predecessors_[source_] = source_;
+  }
 
   if (has_edge_weight_) {
     edge_weight_accessor_ =
@@ -113,6 +124,9 @@ void SSSP::compute() {
                 }
                 double cand = dist + weight;
                 if (relax_distance(&distances_[dst], cand)) {
+                  if (return_path_) {
+                    predecessors_[dst] = v;
+                  }
                   local_next[tid].push_back(dst);
                 }
               };
@@ -145,6 +159,9 @@ void SSSP::compute() {
               }
               double cand = src_dist + weight;
               if (relax_distance(&distances_[dst], cand)) {
+                if (return_path_) {
+                  predecessors_[dst] = src;
+                }
                 local_next[tid].push_back(dst);
               }
             };
@@ -196,11 +213,30 @@ void SSSP::compute() {
   (void)rounds;
 }
 
-void SSSP::sink(execution::Context& ctx, int node_alias, int distance_alias) {
+void SSSP::sink(execution::Context& ctx, int node_alias, int distance_alias,
+                int path_alias) {
   execution::MSVertexColumnBuilder node_builder(vertex_label_);
   execution::ValueColumnBuilder<double> distance_builder;
 
   distance_builder.reserve(vertices_.size());
+
+  // Build path column BEFORE moving vertices_
+  std::shared_ptr<execution::IContextColumn> path_column;
+  if (return_path_ && path_alias >= 0) {
+    execution::PathColumnBuilder path_builder;
+    for (vid_t v : vertices_) {
+      double dist = distances_[v].load(std::memory_order_relaxed);
+      if (dist < 0) {
+        path_builder.push_back_null();
+      } else {
+        auto path = reconstruct_path(
+            v, source_, PlainPredecessorAccessor{predecessors_.get()},
+            vertex_label_, edge_label_, directed_, graph_);
+        path_builder.push_back_opt(std::move(path));
+      }
+    }
+    path_column = path_builder.finish();
+  }
 
   for (vid_t v : vertices_) {
     distance_builder.push_back_opt(distances_[v]);
@@ -210,6 +246,11 @@ void SSSP::sink(execution::Context& ctx, int node_alias, int distance_alias) {
   execution::DataChunk chunk;
   chunk.set(node_alias, node_builder.finish());
   chunk.set(distance_alias, distance_builder.finish());
+
+  if (path_column) {
+    chunk.set(path_alias, path_column);
+  }
+
   ctx.append_chunk(std::move(chunk));
 }
 
