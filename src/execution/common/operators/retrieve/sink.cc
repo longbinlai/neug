@@ -36,11 +36,12 @@
 namespace neug {
 namespace execution {
 
-// Path encoding mode: lightweight (default) or full
+// Path encoding mode: full (default) or lightweight
+// - full: encode all properties (backward compatible default)
 // - lightweight: only encode _ID, _LABEL, PK for vertices; structural info for
 // edges
-// - full: encode all properties
-static thread_local bool path_full_encoding_enabled = false;
+// GDS extension can call set_path_full_encoding(false) for lightweight mode
+static thread_local bool path_full_encoding_enabled = true;
 
 void set_path_full_encoding(bool enabled) {
   path_full_encoding_enabled = enabled;

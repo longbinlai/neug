@@ -41,15 +41,15 @@ struct PlainPredecessorAccessor {
 };
 
 // Configure path encoding mode based on path_properties option
-// - "lightweight" (default): only _ID, _LABEL, PK for vertices; _ID, _LABEL,
+// - "full" (default): all properties encoded (backward compatible)
+// - "lightweight": only _ID, _LABEL, PK for vertices; _ID, _LABEL,
 // _SRC_ID, _DST_ID for edges
-// - "full": all properties encoded
 inline void configure_path_encoding(const std::string& path_properties) {
-  if (path_properties == "full") {
-    execution::set_path_full_encoding(true);
-  } else {
-    // Default to lightweight mode
+  if (path_properties == "lightweight") {
     execution::set_path_full_encoding(false);
+  } else {
+    // Default to full mode (backward compatible)
+    execution::set_path_full_encoding(true);
   }
 }
 

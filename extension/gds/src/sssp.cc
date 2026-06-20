@@ -81,7 +81,7 @@ std::unique_ptr<function::CallFuncInputBase> SSSPFunction::bind(
   input->concurrency = get_option_value<int32_t>(
       options, "concurrency", std::thread::hardware_concurrency());
   input->path_properties =
-      get_option_value<std::string>(options, "path_properties", "lightweight");
+      get_option_value<std::string>(options, "path_properties", "full");
 
   input->node_alias = plan.plan(op_idx).meta_data(0).alias();
   input->distance_alias = plan.plan(op_idx).meta_data(1).alias();

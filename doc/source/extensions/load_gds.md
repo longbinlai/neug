@@ -171,7 +171,7 @@ RETURN node, distance;
 | `source` | STRING | *(required)* | The source node's primary key value |
 | `directed` | BOOL | `false` | Whether to follow edges in their stored direction only |
 | `concurrency` | INT | CPU cores | Number of threads |
-| `path_properties` | STRING | `"lightweight"` | Path encoding mode: `"lightweight"` (structure only) or `"full"` (all properties) |
+| `path_properties` | STRING | `"full"` | Path encoding mode: `"full"` (all properties, default) or `"lightweight"` (structure only) |
 
 **Output columns:**
 
@@ -233,7 +233,7 @@ RETURN node, distance;
 | `directed` | BOOL | `false` | Whether to follow edges in their stored direction only |
 | `weight` | STRING | `""` | Edge property name to use as weight (empty = unit weight) |
 | `concurrency` | INT | CPU cores | Number of threads |
-| `path_properties` | STRING | `"lightweight"` | Path encoding mode: `"lightweight"` (structure only) or `"full"` (all properties) |
+| `path_properties` | STRING | `"full"` | Path encoding mode: `"full"` (all properties, default) or `"lightweight"` (structure only) |
 
 **Output columns:**
 
@@ -528,24 +528,26 @@ RETURN node, distance, path;
 
 The `path_properties` option controls what information is included in the path:
 
-**Lightweight mode** (default, `path_properties: "lightweight"`):
-- **Nodes**: `_ID`, `_LABEL`, and primary key only
-- **Relationships**: `_ID`, `_LABEL`, `_SRC_ID`, `_DST_ID` only
-- **Performance**: ~0.5s for 62K paths on LDBC SF10
-
-**Full mode** (`path_properties: "full"`):
+**Full mode** (default, `path_properties: "full"` or unspecified):
 - **Nodes**: All properties
 - **Relationships**: All properties
-- **Performance**: ~1.3s for 62K paths on LDBC SF10 (2.6x slower)
+- **Performance**: ~1.3s for 62K paths on LDBC SF10
+- **Backward compatible**: Same behavior as standard `MATCH p = ...` path queries
+
+**Lightweight mode** (`path_properties: "lightweight"`):
+- **Nodes**: `_ID`, `_LABEL`, and primary key only
+- **Relationships**: `_ID`, `_LABEL`, `_SRC_ID`, `_DST_ID` only
+- **Performance**: ~0.5s for 62K paths on LDBC SF10 (2.6x faster)
+- **Use case**: When you only need path structure, not all properties
 
 ```cypher
--- Lightweight path (fast)
+-- Full path with all properties (default)
 CALL bfs('graph', {source: '0'})
 YIELD node, distance, path
 RETURN node, path;
 
--- Full path with all properties (slower)
-CALL bfs('graph', {source: '0', path_properties: 'full'})
+-- Lightweight path (faster, structure only)
+CALL bfs('graph', {source: '0', path_properties: 'lightweight'})
 YIELD node, distance, path
 RETURN node, path;
 ```

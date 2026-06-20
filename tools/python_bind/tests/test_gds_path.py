@@ -435,12 +435,44 @@ class TestPathEdgeCases:
 class TestPathEncodingModes:
     """Tests for path_properties configuration (lightweight vs full)."""
 
-    def test_bfs_lightweight_mode_default(self, tmp_path):
-        """BFS default mode should be lightweight (only structural info)."""
+    def test_bfs_full_mode_default(self, tmp_path):
+        """BFS default mode should be full (all properties, backward compatible)."""
         with tinysnb_simple_connection(tmp_path) as conn:
             rows = list(
                 conn.execute(
                     "CALL bfs('person_knows', {source: '0'}) "
+                    "YIELD node, distance, path "
+                    "RETURN node.id, distance, path;"
+                )
+            )
+            # Filter for distance=1 paths in Python
+            filtered = [(nid, d, p) for nid, d, p in rows if d == 1]
+            assert len(filtered) > 0, "should have at least one distance=1 path"
+            _, _, path = filtered[0]
+            assert path is not None
+            assert "nodes" in path
+            assert "rels" in path
+
+            # Full mode (default): vertices have all properties
+            if path["nodes"]:
+                node = path["nodes"][0]
+                assert "_ID" in node
+                assert "_LABEL" in node
+                assert "id" in node  # PK
+                # Should have non-PK properties in full mode (default)
+                # (tinysnb person has: name, age, etc.)
+                # At least one non-PK property should be present
+                non_pk_keys = [
+                    k for k in node.keys() if k not in ["_ID", "_LABEL", "id"]
+                ]
+                assert len(non_pk_keys) > 0, "full mode should include non-PK properties"
+
+    def test_bfs_lightweight_mode(self, tmp_path):
+        """BFS with path_properties: 'lightweight' should include only structural info."""
+        with tinysnb_simple_connection(tmp_path) as conn:
+            rows = list(
+                conn.execute(
+                    "CALL bfs('person_knows', {source: '0', path_properties: 'lightweight'}) "
                     "YIELD node, distance, path "
                     "RETURN node.id, distance, path;"
                 )
@@ -507,12 +539,38 @@ class TestPathEncodingModes:
                     len(non_pk_keys) > 0
                 ), "full mode should include non-PK properties"
 
-    def test_sssp_lightweight_mode(self, tmp_path):
-        """SSSP default mode should be lightweight."""
+    def test_sssp_full_mode_default(self, tmp_path):
+        """SSSP default mode should be full (all properties)."""
         with tinysnb_simple_connection(tmp_path) as conn:
             rows = list(
                 conn.execute(
                     "CALL sssp('person_knows', {source: '0'}) "
+                    "YIELD node, distance, path "
+                    "RETURN node.id, distance, path;"
+                )
+            )
+            # Filter for distance>0 paths in Python
+            filtered = [(nid, d, p) for nid, d, p in rows if d > 0]
+            assert len(filtered) > 0, "should have at least one reachable path"
+            _, _, path = filtered[0]
+            assert path is not None
+
+            # Full mode (default) check
+            if path["nodes"]:
+                node = path["nodes"][0]
+                non_pk_keys = [
+                    k for k in node.keys() if k not in ["_ID", "_LABEL", "id"]
+                ]
+                assert (
+                    len(non_pk_keys) > 0
+                ), "full mode should include non-PK properties"
+
+    def test_sssp_lightweight_mode(self, tmp_path):
+        """SSSP with path_properties: 'lightweight' should include only structural info."""
+        with tinysnb_simple_connection(tmp_path) as conn:
+            rows = list(
+                conn.execute(
+                    "CALL sssp('person_knows', {source: '0', path_properties: 'lightweight'}) "
                     "YIELD node, distance, path "
                     "RETURN node.id, distance, path;"
                 )
@@ -532,32 +590,6 @@ class TestPathEncodingModes:
                 assert (
                     len(non_structural_keys) == 0
                 ), "lightweight mode should only have structural keys"
-
-    def test_sssp_full_mode(self, tmp_path):
-        """SSSP with path_properties: 'full' should include all properties."""
-        with tinysnb_simple_connection(tmp_path) as conn:
-            rows = list(
-                conn.execute(
-                    "CALL sssp('person_knows', {source: '0', path_properties: 'full'}) "
-                    "YIELD node, distance, path "
-                    "RETURN node.id, distance, path;"
-                )
-            )
-            # Filter for distance>0 paths in Python
-            filtered = [(nid, d, p) for nid, d, p in rows if d > 0]
-            assert len(filtered) > 0, "should have at least one reachable path"
-            _, _, path = filtered[0]
-            assert path is not None
-
-            # Full mode check
-            if path["nodes"]:
-                node = path["nodes"][0]
-                non_pk_keys = [
-                    k for k in node.keys() if k not in ["_ID", "_LABEL", "id"]
-                ]
-                assert (
-                    len(non_pk_keys) > 0
-                ), "full mode should include non-PK properties"
 
     def test_lightweight_vs_full_same_distances(self, tmp_path):
         """Lightweight and full modes should return same distances."""
