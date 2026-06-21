@@ -197,15 +197,20 @@ CALL bfs('social', {source: '0'})
 YIELD node, distance, path
 RETURN node.fName, distance, path;
 
+-- Path with all properties (default, same as omitting path_properties)
+CALL bfs('social', {source: '0', path_properties: 'full'})
+YIELD node, distance, path
+RETURN node.fName, distance, path;
+
 -- Extract path details
 CALL bfs('social', {source: '0'})
 YIELD node, distance, path
-RETURN node.fName, distance, 
+RETURN node.fName, distance,
        nodes(path) AS path_nodes,
        relationships(path) AS path_edges;
 
--- Full path with all properties
-CALL bfs('social', {source: '0', path_properties: 'full'})
+-- Lightweight path (structure only, better performance)
+CALL bfs('social', {source: '0', path_properties: 'lightweight'})
 YIELD node, distance, path
 RETURN node.fName, distance, path;
 ```
@@ -581,12 +586,11 @@ RETURN distance, path;
 
 - **Zero overhead when not YIELDed**: If you don't request the `path` column, there is
   no performance penalty compared to distance-only queries.
-- **Lightweight mode recommended**: For most use cases, lightweight mode provides
-  sufficient information (node IDs and relationship structure) with much better
-  performance.
+- **Default is full mode**: By default, paths include all vertex and edge properties,
+  matching the behavior of standard `MATCH p = ...` queries for backward compatibility.
 - **Large result sets**: When returning paths for many nodes, consider using
-  `path_properties: "lightweight"` and fetching additional properties separately if
-  needed.
+  `path_properties: "lightweight"` for better performance if you only need the path
+  structure (node IDs and relationship connections).
 
 ## Algorithm Summary
 
