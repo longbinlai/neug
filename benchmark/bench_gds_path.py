@@ -14,12 +14,13 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_REPO_ROOT, "tools", "python_bind"))
 
 from neug.database import Database
 
 RESOURCE_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "resources", "graphalytics"
+    _REPO_ROOT, "tools", "python_bind", "tests", "resources", "graphalytics"
 )
 
 LONG_MAX = 9223372036854775807
