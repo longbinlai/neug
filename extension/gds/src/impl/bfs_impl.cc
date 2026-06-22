@@ -125,10 +125,8 @@ void BFS::compute() {
               return;
             }
 
-            // Pull mode: a vertex joins this level only if it has a neighbor in
-            // the *current* frontier (distance == level - 1).  Checking for any
-            // visited neighbor instead would collapse every remaining reachable
-            // vertex into a single level.
+            // Pull mode: a vertex joins this level only if it has a neighbor
+            // in the current frontier (distance == level - 1).
             bool reachable = false;
             vid_t pred = std::numeric_limits<vid_t>::max();
             auto ie_edges = ie_view.get_edges(dst);
@@ -154,11 +152,16 @@ void BFS::compute() {
             if (!reachable) {
               return;
             }
-            if (return_path_) {
-              predecessors_[dst] = pred;
+            // CAS ensures only one thread sets distance and predecessor.
+            uint32_t expected = std::numeric_limits<uint32_t>::max();
+            if (__atomic_compare_exchange_n(&distances_[dst], &expected, level,
+                                             false, __ATOMIC_RELAXED,
+                                             __ATOMIC_RELAXED)) {
+              if (return_path_) {
+                predecessors_[dst] = pred;
+              }
+              local_next[tid].push_back(dst);
             }
-            distances_[dst] = level;
-            local_next[tid].push_back(dst);
           },
           concurrency_);
     }

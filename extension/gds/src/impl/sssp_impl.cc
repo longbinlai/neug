@@ -69,6 +69,9 @@ SSSP::SSSP(const StorageReadInterface& graph, label_t vertex_label,
   distances_[source_] = 0.0;
 
   if (return_path_) {
+    // Path return is routed through SSSPPred (single-threaded) by the
+    // dispatcher in sssp.cc. This branch is retained for safety but
+    // should never execute in production.
     predecessors_.reset(new vid_t[vertex_count]);
     for (size_t i = 0; i < vertex_count; ++i) {
       predecessors_[i] = std::numeric_limits<vid_t>::max();

@@ -114,9 +114,11 @@ execution::Context SSSPFunction::exec(const function::CallFuncInputBase& input,
   }
 
   execution::Context ret;
-  // The plain SSSP has no predicate support; dispatch to the predicate-aware
-  // variant when a vertex or edge predicate is present.
-  if (sssp_input.vertex_pred != nullptr || sssp_input.edge_pred != nullptr) {
+  // When path return is requested, route through SSSPPred (single-threaded
+  // Dijkstra) to avoid the concurrency hazard of maintaining predecessors_
+  // in the parallel SSSP. SSSPPred also handles the predicate case.
+  if (sssp_input.return_path || sssp_input.vertex_pred != nullptr ||
+      sssp_input.edge_pred != nullptr) {
     SSSPPred sssp(graph, sssp_input.vertex_label, sssp_input.edge_label,
                   source_vid, sssp_input.directed, sssp_input.edge_weight,
                   sssp_input.concurrency, sssp_input.vertex_pred.get(),
