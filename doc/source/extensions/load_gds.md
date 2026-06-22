@@ -170,8 +170,8 @@ RETURN node, distance;
 |---|---|---|---|
 | `source` | STRING | *(required)* | The source node's primary key value |
 | `directed` | BOOL | `false` | Whether to follow edges in their stored direction only |
-| `concurrency` | INT | CPU cores | Number of threads |
 | `path_properties` | STRING | `"full"` | Path encoding mode: `"full"` (all properties, default) or `"lightweight"` (structure only) |
+| `concurrency` | INT | CPU cores | Number of threads |
 
 **Output columns:**
 
@@ -237,8 +237,8 @@ RETURN node, distance;
 | `source` | STRING | *(required)* | The source node's primary key value |
 | `directed` | BOOL | `false` | Whether to follow edges in their stored direction only |
 | `weight` | STRING | `""` | Edge property name to use as weight (empty = unit weight) |
-| `concurrency` | INT | CPU cores | Number of threads |
 | `path_properties` | STRING | `"full"` | Path encoding mode: `"full"` (all properties, default) or `"lightweight"` (structure only) |
+| `concurrency` | INT | CPU cores | Number of threads |
 
 **Output columns:**
 
