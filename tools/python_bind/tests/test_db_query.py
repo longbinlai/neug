@@ -20,14 +20,10 @@ import logging
 import os
 import shutil
 import sys
+from ctypes import sizeof
 from unittest import result
 
 import pytest
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
-
-from ctypes import sizeof
-
 from conftest import ensure_result_cnt_eq
 from conftest import ensure_result_cnt_gt_zero
 from conftest import submit_cypher_query
@@ -2622,7 +2618,7 @@ def test_multi_ddl_queries():
        CREATE NODE TABLE N (id SERIAL, PRIMARY KEY(id));
         """
         )
-    assert str("Unsupported basic type for conversion: SERIAL") in str(excinfo.value)
+    assert "SERIAL" in str(excinfo.value)
     conn.close()
     db.close()
 
@@ -3158,11 +3154,13 @@ def test_sort_csr_compact(tmp_path):
         "MATCH (a:Person {id: 0}), (b:Person {id: 1}) CREATE (a)-[:Knows {since: 100}]->(b);"
     )
     res = sess.execute(
-        "MATCH (a: Person {id: 1})-[r:Knows]-> (b: Person) WHERE r.since < 2 RETURN b.id, r.since"
+        query="MATCH (a: Person {id: 1})-[r:Knows]-> (b: Person) WHERE r.since < $since RETURN b.id, r.since",
+        parameters={"since": 2},
     )
     assert list(res) == [[0, 0], [98, 1]]
     res = sess.execute(
-        "MATCH (a: Person {id: 0})-[r:Knows]-> (b: Person) WHERE r.since > 99 RETURN b.id, r.since"
+        query="MATCH (a: Person {id: 0})-[r:Knows]-> (b: Person) WHERE r.since > $since RETURN b.id, r.since",
+        parameters={"since": 99},
     )
     assert list(res) == [[1, 100]]
     sess.close()

@@ -131,6 +131,8 @@ endfunction()
 add_extension_if_enabled("parquet")
 # Add sampled_match extension
 add_extension_if_enabled("sampled_match")
+# Add gds (graph data science) extension
+add_extension_if_enabled("gds")
 # Add httpfs extension (S3/OSS + HTTP/HTTPS)
 add_extension_if_enabled("httpfs")
 

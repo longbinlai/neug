@@ -27,14 +27,16 @@
 #include <utility>
 #include <vector>
 
+#include "neug/execution/common/types/value.h"
 #include "neug/storages/allocators.h"
+#include "neug/storages/checkpoint.h"
+#include "neug/storages/checkpoint_manager.h"
 #include "neug/storages/csr/csr_view.h"
 #include "neug/storages/graph/edge_table.h"
 #include "neug/storages/graph/operation_params.h"
 #include "neug/storages/graph/schema.h"
 #include "neug/storages/graph/vertex_table.h"
 #include "neug/utils/exception/exception.h"
-#include "neug/utils/property/property.h"
 #include "neug/utils/property/types.h"
 #include "neug/utils/result.h"
 
@@ -118,21 +120,13 @@ class PropertyGraph {
   ~PropertyGraph();
 
   /**
-   * @brief Open the property graph from persistent storage.
+   * @brief Open the graph from the given Checkpoint using the Module interface.
    *
-   * @param work_dir Working directory containing graph data files
-   * @param memory_level Memory usage level (controls performance vs memory
-   * tradeoff)
-   *
-   * Implementation: Sets work_dir_ and memory_level_, loads schema from
-   * work_dir, then loads vertex and edge data from snapshot files.
-   *
-   * @since v0.1.0
+   * Reads a CheckpointManifest from @p ckp, then opens each module (Schema,
+   * VertexTable, EdgeTable) via Module::Open.  If the checkpoint contains no
+   * meta the graph starts empty.
    */
-  void Open(const std::string& work_dir, MemoryLevel memory_level);
-
-  void Open(const Schema& schema, const std::string& work_dir,
-            MemoryLevel memory_level);
+  void Open(std::shared_ptr<Checkpoint> ckp, MemoryLevel memory_level);
 
   void Compact(bool compact_csr, float reserve_ratio, timestamp_t ts);
 
@@ -140,14 +134,30 @@ class PropertyGraph {
    * @brief Dump the current graph state to persistent storage.
    * @param reopen If true, reopens the graph after dumping (default: true)
    */
-  void Dump(bool reopen = true);
+  void Dump(std::shared_ptr<Checkpoint> ckp, bool reopen = true);
 
   /**
-   * @brief Dump schema information to a file.
-   *
-   * @since v0.1.0
+   * @brief Dump using the graph's own internal Checkpoint.
+   * Convenience overload for callers that don't hold a Checkpoint reference.
    */
-  void DumpSchema();
+  void Dump(bool reopen = true) {
+    assert(ckp_ && "ckp_ must be set before calling Dump()");
+    Dump(ckp_, reopen);
+  }
+
+  Checkpoint& checkpoint() {
+    assert(ckp_);
+    return *ckp_;
+  }
+
+  const Checkpoint& checkpoint() const {
+    assert(ckp_);
+    return *ckp_;
+  }
+
+  std::shared_ptr<Checkpoint> checkpoint_ptr() const { return ckp_; }
+
+  MemoryLevel memory_level() const { return memory_level_; }
 
   /**
    * @brief Get read-only access to the schema.
@@ -311,8 +321,8 @@ class PropertyGraph {
    * @return true if deletion is successful, false otherwise.
    * @note We always delete vertex in detach mode.
    */
-  Status DeleteVertex(label_t v_label, const Property& oid, timestamp_t ts);
-
+  Status DeleteVertex(label_t v_label, const execution::Value& oid,
+                      timestamp_t ts);
   Status DeleteVertex(label_t v_label, vid_t lid, timestamp_t ts);
 
   Status DeleteEdge(label_t src_label, vid_t src_lid, label_t dst_label,
@@ -360,6 +370,14 @@ class PropertyGraph {
     return edge_tables_.at(index);
   }
 
+  inline bool HasEdgeTable(uint32_t index) const {
+    return edge_tables_.count(index) != 0;
+  }
+
+  inline EdgeTable& get_edge_table_by_index(uint32_t index) {
+    return edge_tables_.at(index);
+  }
+
   vid_t LidNum(label_t vertex_label) const;
 
   vid_t VertexNum(label_t vertex_label, timestamp_t ts = MAX_TIMESTAMP) const;
@@ -369,28 +387,28 @@ class PropertyGraph {
   size_t EdgeNum(label_t src_label, label_t edge_label,
                  label_t dst_label) const;
 
-  bool get_lid(label_t label, const Property& oid, vid_t& lid,
+  bool get_lid(label_t label, const execution::Value& oid, vid_t& lid,
                timestamp_t ts) const;
 
-  Property GetOid(label_t label, vid_t lid, timestamp_t ts) const;
+  execution::Value GetOid(label_t label, vid_t lid, timestamp_t ts) const;
 
-  Status AddVertex(label_t label, const Property& id,
-                   const std::vector<Property>& props, vid_t& vid,
+  Status AddVertex(label_t label, const execution::Value& id,
+                   const std::vector<execution::Value>& props, vid_t& vid,
                    timestamp_t ts, bool insert_safe = false);
 
   Status AddEdge(label_t src_label, vid_t src_lid, label_t dst_label,
                  vid_t dst_lid, label_t edge_label,
-                 const std::vector<Property>& properties, timestamp_t ts,
-                 Allocator& alloc, int32_t& oe_offset, const void*& prop,
-                 bool insert_safe = false);
+                 const std::vector<execution::Value>& properties,
+                 timestamp_t ts, Allocator& alloc, int32_t& oe_offset,
+                 const void*& prop, bool insert_safe = false);
 
   Status UpdateVertexProperty(label_t v_label, vid_t vid, int32_t prop_id,
-                              const Property& value, timestamp_t ts);
+                              const execution::Value& value, timestamp_t ts);
 
   Status UpdateEdgeProperty(label_t src_label, vid_t src_lid, label_t dst_label,
                             vid_t dst_lid, label_t e_label, int32_t oe_offset,
                             int32_t ie_offset, int32_t col_id,
-                            const Property& new_prop, timestamp_t ts);
+                            const execution::Value& new_prop, timestamp_t ts);
 
   /**
    * @brief Get a view for traversing outgoing edges.
@@ -582,11 +600,9 @@ class PropertyGraph {
 
   std::string get_statistics_json() const;
 
-  inline std::string get_schema_yaml_path() const {
-    return work_dir_ + "/graph.yaml";
-  }
+  inline std::string work_dir() const { return ckp_->path(); }
 
-  inline std::string work_dir() const { return work_dir_; }
+  std::shared_ptr<PropertyGraph> Clone() const;
 
  private:
   Status delete_vertex_properties_check(const std::string& vertex_type_name,
@@ -609,7 +625,7 @@ class PropertyGraph {
 
   void compact_schema();
 
-  std::string work_dir_;
+  std::shared_ptr<Checkpoint> ckp_;
   Schema schema_;
   std::vector<std::shared_ptr<std::mutex>> v_mutex_;
   std::vector<VertexTable> vertex_tables_;
@@ -617,6 +633,8 @@ class PropertyGraph {
 
   size_t vertex_label_total_count_, edge_label_total_count_;
   MemoryLevel memory_level_;
+
+  friend class GraphView;
 };
 
 }  // namespace neug

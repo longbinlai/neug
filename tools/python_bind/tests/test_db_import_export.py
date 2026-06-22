@@ -24,7 +24,6 @@ from pathlib import Path
 
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
 from neug.database import Database
 from neug.proto.error_pb2 import ERR_BAD_ENCODING
 from neug.proto.error_pb2 import ERR_COMPILATION
@@ -301,7 +300,7 @@ def test_export_no_permission(tmp_path):
         with pytest.raises(Exception) as excinfo:
             conn.execute(f'COPY (MATCH (v:person) RETURN v) to "{out_path}";')
             print(str(excinfo.value))
-            assert str(ERR_PERMISSION) in str(excinfo.value)
+        assert str(ERR_PERMISSION) in str(excinfo.value)
     finally:
         os.chmod(out_dir, 0o700)
     conn.close()

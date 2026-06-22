@@ -15,13 +15,7 @@ The following extensions are currently supported or planned to be supported in N
 | Data Source     | [JSON](load_json.md)                | Import & export data from JSON file format (built-in since v0.1.2)        | v0.1          |
 | Data Source     | [PARQUET](load_parquet.md)          | Import & Export data from PARQUET format files                            | v0.1.1        |
 | File System     | [HTTP/HTTPS/S3/OSS](load_httpfs.md) | Provide data source based on HTTP/HTTPS/S3/OSS protocol                   | v0.1.2        |
-| Graph Algorithm | K-Core                           | Find all subgraphs with core number ≥ k. Returns `(node, core_number)` | planned v0.2  |
-| Graph Algorithm | PageRank                         | Calculate node importance scores. Returns `(node, rank)`                | planned v0.2  |
-| Graph Algorithm | Shortest Path (Dijkstra)         | Single-source shortest path algorithm                                     | planned v0.2  |
-| Graph Algorithm | Connected Components             | Weakly connected components detection                                     | planned v0.2  |
-| Graph Algorithm | Leiden                           | Community detection algorithm for finding communities in networks         | planned v0.2  |
-| Graph Algorithm | Label Propagation                | Community detection algorithm that propagates labels through the network  | planned v0.2  |
-| Graph Algorithm | Subgraph Matching (Estimator)    | Unbiased estimation of subgraph matching                                  | planned v0.2  |
+| Graph Algorithm | [GDS](load_gds.md)               | Graph Data Science algorithms (PageRank, BFS, SSSP, WCC, LCC, K-Core, Label Propagation, Louvain, Leiden) | v0.1.3 |
 
 ## Using Extensions
 
@@ -97,5 +91,4 @@ The typical lifecycle of an extension follows these steps:
 1. **Install**: Download the extension from the official repository to your local system
 2. **Load**: Load the extension into your current database to make it available for use
 3. **Use**: Execute queries that utilize the extension's functionality
-4. **Unload**: Extensions are automatically unloaded when the database closes
-5. **Uninstall**: Remove the extension files from your local system when no longer needed
+4. **Uninstall**: Remove the extension files from your local system when no longer needed

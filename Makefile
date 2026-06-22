@@ -1,41 +1,59 @@
-.PHONY: python-dev python-wheel python-clean clean format-check full-check help
+SHELL := /bin/bash
 
-# Check for required tools at the start of each target
+ROOT_BUILD         := $(CURDIR)/build
+BUILD_TYPE         ?= Release
+BUILD_TEST         ?= OFF
+EXTRA_CMAKE_FLAGS  ?=
+
+NPROC := $(shell { command -v nproc >/dev/null 2>&1 && nproc; } 2>/dev/null \
+              || { command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu; } 2>/dev/null \
+              || echo 4)
+JOBS  ?= $(NPROC)
+
+.PHONY: help check-tools cpp-build python-dev python-wheel python-clean node-dev node-pack node-clean clean dist-clean format-check full-check
+
+.DEFAULT_GOAL := help
 
 check-tools:
-	@command -v cmake >/dev/null 2>&1 || { echo >&2 "CMake is required but not found. Please install CMake."; exit 1; }
+	@command -v cmake >/dev/null 2>&1 || { echo >&2 "CMake is required but not found."; exit 1; }
 
-all: wheel build
+cpp-build: check-tools  ## Build C++ core only (no Python bindings)
+	cmake -S . -B $(ROOT_BUILD) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBUILD_PYTHON=OFF -DBUILD_TEST=$(BUILD_TEST) $(EXTRA_CMAKE_FLAGS)
+	cmake --build $(ROOT_BUILD) -j$(JOBS)
 
-.PHONY: python-dev
-python-dev: check-tools  ## Install Python development environment
+python-dev: check-tools  ## Install Python dev environment (bootstraps root build)
 	@cd tools/python_bind && \
-	make requirements && \
-	make dev
+	$(MAKE) requirements && \
+	$(MAKE) dev-full
 
-.PHONY: python-wheel
-python-wheel: check-tools ## Build the neug python wheel package
-	@cd tools/python_bind && \
-	make wheel
+python-wheel: check-tools  ## Build the neug python wheel package
+	@cd tools/python_bind && $(MAKE) wheel
 
-.PHONY: python-clean
-python-clean: check-tools ## Clean up Python build artifacts
-	@cd tools/python_bind && \
-	make clean
+python-clean:  ## Clean Python build artifacts (does NOT touch <repo>/build)
+	@cd tools/python_bind && $(MAKE) clean
 
-.PHONY: clean
-clean: ## Clean up all build artifacts
-	make python-clean
+node-dev: check-tools  ## Build Node.js binding (bootstraps root build)
+	@cd tools/nodejs_bind && $(MAKE) dev
 
-.PHONY: format-check
-format-check: ## Run format checks only (C++ and Python)
+node-pack: check-tools  ## Create per-platform npm tarball
+	@cd tools/nodejs_bind && $(MAKE) pack
+
+node-clean:  ## Clean Node.js build artifacts (does NOT touch <repo>/build)
+	@cd tools/nodejs_bind && $(MAKE) clean
+
+clean: python-clean node-clean  ## Clean Python + Node.js build artifacts (does NOT touch <repo>/build)
+
+dist-clean: python-clean node-clean  ## Clean Python + Node.js artifacts AND the root build dir
+	rm -rf $(ROOT_BUILD)
+
+format-check:  ## Run format checks only (C++ and Python)
 	@bash scripts/pre_commit_check.sh --format-only
 
-.PHONY: full-check
-full-check: ## Run full checks (format + build + tests)
+full-check:  ## Run full checks (format + build + tests)
 	@bash scripts/pre_commit_check.sh --full
 
-.PHONY: help
 help:  ## Display this help information
 	@echo -e "\033[1mAvailable commands:\033[0m"
-	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' | sort
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' | \
+		sort

@@ -25,6 +25,7 @@
 #include "neug/storages/csr/csr_base.h"
 #include "neug/storages/csr/csr_view.h"
 #include "neug/storages/csr/nbr.h"
+#include "neug/storages/module/type_name.h"
 #include "neug/utils/property/types.h"
 
 namespace neug {
@@ -36,7 +37,7 @@ class ImmutableCsr : public TypedCsrBase<EDATA_T> {
   using nbr_t = ImmutableNbr<EDATA_T>;
 
   ImmutableCsr() : unsorted_since_(0) {}
-  ~ImmutableCsr() { close(); }
+  ~ImmutableCsr() = default;
 
   CsrType csr_type() const override { return CsrType::kImmutable; }
 
@@ -61,15 +62,10 @@ class ImmutableCsr : public TypedCsrBase<EDATA_T> {
 
   size_t edge_num() const override { return edge_num_.load(); }
 
-  void open(const std::string& name, const std::string& snapshot_dir,
-            const std::string& work_dir) override;
+  void Open(Checkpoint& ckp, const ModuleDescriptor& descriptor,
+            MemoryLevel memory_level) override;
 
-  void open_in_memory(const std::string& prefix) override;
-
-  void open_with_hugepages(const std::string& prefix) override;
-
-  void dump(const std::string& name,
-            const std::string& new_snapshot_dir) override;
+  ModuleDescriptor Dump(Checkpoint& ckp) override;
 
   void reset_timestamp() override;
 
@@ -79,7 +75,7 @@ class ImmutableCsr : public TypedCsrBase<EDATA_T> {
 
   size_t capacity() const override;
 
-  void close() override;
+  void Close();
 
   void batch_sort_by_edge_data(timestamp_t ts) override;
 
@@ -103,22 +99,42 @@ class ImmutableCsr : public TypedCsrBase<EDATA_T> {
                        timestamp_t ts = 0) override;
 
   std::tuple<std::vector<vid_t>, std::vector<vid_t>> batch_export(
-      std::shared_ptr<ColumnBase> prev_data_col) const override {
+      ColumnBase* /*prev_data_col*/) const override {
     LOG(FATAL) << "not implemented...";
     return {};
   }
 
+  void DetachVertex(vid_t /*vid*/, Allocator& /*alloc*/) override {
+    THROW_NOT_IMPLEMENTED_EXCEPTION(
+        "DetachVertex is not implemented for immutable csr");
+  }
+
+  // Zero-copy COW clone: share IDataContainer buffers via shared_ptr.
+  std::unique_ptr<Module> Clone() const override {
+    auto cow_clone = std::make_unique<ImmutableCsr<EDATA_T>>();
+    cow_clone->adj_list_buffer_ = adj_list_buffer_;
+    cow_clone->degree_list_buffer_ = degree_list_buffer_;
+    cow_clone->nbr_list_buffer_ = nbr_list_buffer_;
+    cow_clone->unsorted_since_ = unsorted_since_;
+    cow_clone->edge_num_ = edge_num_.load();
+    return cow_clone;
+  }
+
+  void Detach(Checkpoint& ckp, MemoryLevel level) override {
+    THROW_NOT_IMPLEMENTED_EXCEPTION(
+        "Detach is not implemented for immutable csr");
+  }
+
+  std::string ModuleTypeName() const override { return type_name(); }
+
+  static std::string type_name() {
+    return "immutable_csr<" + type_name_string<EDATA_T>() + ">";
+  }
+
  private:
-  void load_meta(const std::string& prefix);
-
-  void dump_meta(const std::string& prefix) const;
-
-  void open_internal(const std::string& snapshot_prefix,
-                     const std::string& tmp_prefix, MemoryLevel mem_level);
-
-  std::unique_ptr<IDataContainer> adj_list_buffer_;
-  std::unique_ptr<IDataContainer> degree_list_buffer_;
-  std::unique_ptr<IDataContainer> nbr_list_buffer_;
+  std::shared_ptr<IDataContainer> adj_list_buffer_;
+  std::shared_ptr<IDataContainer> degree_list_buffer_;
+  std::shared_ptr<IDataContainer> nbr_list_buffer_;
   timestamp_t unsorted_since_;
   std::atomic<uint64_t> edge_num_{0};
 };
@@ -130,7 +146,7 @@ class SingleImmutableCsr : public TypedCsrBase<EDATA_T> {
   using nbr_t = ImmutableNbr<EDATA_T>;
 
   SingleImmutableCsr() {}
-  ~SingleImmutableCsr() { close(); }
+  ~SingleImmutableCsr() = default;
 
   CsrType csr_type() const override { return CsrType::kSingleImmutable; }
 
@@ -155,15 +171,10 @@ class SingleImmutableCsr : public TypedCsrBase<EDATA_T> {
 
   size_t edge_num() const override { return edge_num_.load(); }
 
-  void open(const std::string& name, const std::string& snapshot_dir,
-            const std::string& work_dir) override;
+  void Open(Checkpoint& ckp, const ModuleDescriptor& descriptor,
+            MemoryLevel level) override;
 
-  void open_in_memory(const std::string& prefix) override;
-
-  void open_with_hugepages(const std::string& prefix) override;
-
-  void dump(const std::string& name,
-            const std::string& new_snapshot_dir) override;
+  ModuleDescriptor Dump(Checkpoint& ckp) override;
 
   void reset_timestamp() override;
 
@@ -173,7 +184,7 @@ class SingleImmutableCsr : public TypedCsrBase<EDATA_T> {
 
   size_t capacity() const override;
 
-  void close() override;
+  void Close();
 
   void batch_sort_by_edge_data(timestamp_t ts) override;
 
@@ -197,15 +208,37 @@ class SingleImmutableCsr : public TypedCsrBase<EDATA_T> {
                        timestamp_t ts = 0) override;
 
   std::tuple<std::vector<vid_t>, std::vector<vid_t>> batch_export(
-      std::shared_ptr<ColumnBase> prev_data_col) const override {
+      ColumnBase* /*prev_data_col*/) const override {
     LOG(FATAL) << "not implemented...";
     return {};
   }
 
+  void DetachVertex(vid_t /*vid*/, Allocator& /*alloc*/) override {
+    THROW_NOT_IMPLEMENTED_EXCEPTION(
+        "DetachVertex is not implemented for single immutable csr");
+  }
+
+  // Zero-copy COW clone: share IDataContainer buffer via shared_ptr.
+  std::unique_ptr<Module> Clone() const override {
+    auto cow_clone = std::make_unique<SingleImmutableCsr<EDATA_T>>();
+    cow_clone->nbr_list_buffer_ = nbr_list_buffer_;
+    cow_clone->edge_num_ = edge_num_.load();
+    return cow_clone;
+  }
+
+  void Detach(Checkpoint& ckp, MemoryLevel level) override {
+    THROW_NOT_IMPLEMENTED_EXCEPTION(
+        "Detach is not implemented for single immutable csr");
+  }
+
+  std::string ModuleTypeName() const override { return type_name(); }
+
+  static std::string type_name() {
+    return "single_immutable_csr<" + type_name_string<EDATA_T>() + ">";
+  }
+
  private:
-  void load_meta(const std::string& prefix);
-  void dump_meta(const std::string& prefix) const;
-  std::unique_ptr<IDataContainer> nbr_list_buffer_;
+  std::shared_ptr<IDataContainer> nbr_list_buffer_;
   std::atomic<uint64_t> edge_num_{0};
 };
 

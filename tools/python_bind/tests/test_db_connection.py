@@ -23,7 +23,6 @@ import time
 
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
 from neug.database import Database
 from neug.proto.error_pb2 import ERR_CONFIG_INVALID
 from neug.proto.error_pb2 import ERR_CONNECTION_CLOSED
@@ -64,7 +63,7 @@ def test_open_after_close(tmp_path):
 def test_local_connection_params(tmp_path):
     shutil.rmtree("/tmp/local_conn_param_db", ignore_errors=True)
     db_dir = tmp_path / "local_conn_param_db"
-    db = Database(db_path=str(db_dir), mode="w", max_thread_num=4)
+    db = Database(db_path=str(db_dir), mode="w", max_thread_num=os.cpu_count())
     conn = db.connect()
     assert conn is not None
     conn.close()

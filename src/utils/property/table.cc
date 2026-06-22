@@ -21,7 +21,6 @@
 #include <ostream>
 #include <utility>
 
-#include "neug/storages/file_names.h"
 #include "neug/utils/exception/exception.h"
 #include "neug/utils/property/column.h"
 #include "neug/utils/serialization/out_archive.h"
@@ -31,70 +30,61 @@ namespace neug {
 Table::Table() {}
 Table::~Table() { close(); }
 
-void Table::initColumns(const std::vector<std::string>& col_name,
-                        const std::vector<DataType>& property_types) {
-  size_t col_num = col_name.size();
+Table::Table(const std::vector<std::string>& col_names,
+             const std::vector<DataType>& property_types) {
+  size_t col_num = col_names.size();
   columns_.clear();
   col_names_.clear();
   col_id_map_.clear();
-  columns_.resize(col_num, nullptr);
+  columns_.resize(col_num);
 
   for (size_t i = 0; i < col_num; ++i) {
     int col_id = col_names_.size();
-    col_id_map_.insert({col_name[i], col_id});
-    col_names_.emplace_back(col_name[i]);
+    col_id_map_.insert({col_names[i], col_id});
+    col_names_.emplace_back(col_names[i]);
     assert(i < property_types.size());
     columns_[col_id] = CreateColumn(property_types[i]);
   }
   columns_.resize(col_id_map_.size());
 }
+std::unique_ptr<Table> Table::Clone() const {
+  auto cow_clone = std::make_unique<Table>();
+  cow_clone->col_names_ = col_names_;
+  cow_clone->col_id_map_ = col_id_map_;
+  cow_clone->columns_.reserve(columns_.size());
+  for (const auto& col : columns_) {
+    cow_clone->columns_.push_back(std::unique_ptr<ColumnBase>(
+        static_cast<ColumnBase*>(col->Clone().release())));
+  }
+  return cow_clone;
+}
 
-void Table::open(const std::string& name, const std::string& work_dir,
-                 const std::vector<std::string>& col_name,
-                 const std::vector<DataType>& property_types) {
-  name_ = name;
-  work_dir_ = work_dir;
-  snapshot_dir_ = checkpoint_dir(work_dir_);
-  initColumns(col_name, property_types);
+void Table::DetachColumn(size_t col_id, Checkpoint& ckp, MemoryLevel level) {
+  if (col_id >= columns_.size())
+    return;
+  columns_[col_id]->Detach(ckp, level);
+}
+
+void Table::DetachAllColumns(Checkpoint& ckp, MemoryLevel level) {
   for (size_t i = 0; i < columns_.size(); ++i) {
-    columns_[i]->open(name + ".col_" + std::to_string(i), snapshot_dir_,
-                      tmp_dir(work_dir));
+    DetachColumn(i, ckp, level);
   }
 }
 
-void Table::open_in_memory(const std::string& name, const std::string& work_dir,
-                           const std::vector<std::string>& col_name,
-                           const std::vector<DataType>& property_types) {
-  name_ = name;
-  work_dir_ = work_dir;
-  snapshot_dir_ = checkpoint_dir(work_dir_);
-  initColumns(col_name, property_types);
+void Table::Init(Checkpoint& ckp, MemoryLevel level) {
+  const ModuleDescriptor empty{};
   for (size_t i = 0; i < columns_.size(); ++i) {
-    columns_[i]->open_in_memory(snapshot_dir_ + "/" + name + ".col_" +
-                                std::to_string(i));
+    columns_[i]->Open(ckp, empty, level);
   }
 }
 
-void Table::open_with_hugepages(const std::string& name,
-                                const std::string& work_dir,
-                                const std::vector<std::string>& col_name,
-                                const std::vector<DataType>& property_types) {
-  name_ = name;
-  work_dir_ = work_dir;
-  snapshot_dir_ = checkpoint_dir(work_dir);
-  initColumns(col_name, property_types);
-  for (size_t i = 0; i < columns_.size(); ++i) {
-    columns_[i]->open_with_hugepages(snapshot_dir_ + "/" + name + ".col_" +
-                                     std::to_string(i));
+void Table::SetColumn(int idx, std::unique_ptr<ColumnBase> col) {
+  if (idx < 0 || static_cast<size_t>(idx) >= columns_.size()) {
+    THROW_INVALID_ARGUMENT_EXCEPTION(
+        "Table::SetColumn: index " + std::to_string(idx) +
+        " out of range (col_num=" + std::to_string(columns_.size()) + ")");
   }
-}
-
-void Table::dump(const std::string& name, const std::string& snapshot_dir) {
-  int i = 0;
-  for (auto col : columns_) {
-    col->dump(snapshot_dir + "/" + name + ".col_" + std::to_string(i++));
-  }
-  columns_.clear();
+  columns_[idx] = std::move(col);
 }
 
 void Table::reset_header(const std::vector<std::string>& col_name) {
@@ -108,17 +98,18 @@ void Table::reset_header(const std::vector<std::string>& col_name) {
   col_id_map_.swap(new_col_id_map);
 }
 
-void Table::add_columns(const std::vector<std::string>& col_names,
-                        const std::vector<DataType>& col_types,
-                        const std::vector<Property>& default_property_values,
-                        size_t capacity, MemoryLevel memory_level) {
+void Table::add_columns(
+    Checkpoint& ckp, const std::vector<std::string>& col_names,
+    const std::vector<DataType>& col_types,
+    const std::vector<execution::Value>& default_property_values,
+    size_t capacity, MemoryLevel memory_level) {
   if (default_property_values.size() != col_names.size()) {
     THROW_RUNTIME_ERROR("default_property_values size mismatch: expected " +
                         std::to_string(col_names.size()) + " but got " +
                         std::to_string(default_property_values.size()));
   }
-  // When add_columns are called, the table is already initialized and col_files
-  // are opened.
+  // When add_columns are called, the table is already initialized and
+  // col_files are opened.
   std::stringstream ss;
   for (const auto& col_name : col_names) {
     ss << col_name << " ";
@@ -130,23 +121,10 @@ void Table::add_columns(const std::vector<std::string>& col_names,
     int col_id = col_names_.size();
     col_id_map_.insert({col_names[i], col_id});
     col_names_.emplace_back(col_names[i]);
-    columns_[col_id] = CreateColumn(col_types[i]);
+    columns_[col_id] = std::unique_ptr<ColumnBase>(CreateColumn(col_types[i]));
   }
   for (size_t i = old_size; i < columns_.size(); ++i) {
-    if (memory_level == MemoryLevel::kSyncToFile) {
-      columns_[i]->open(name_ + ".col_" + std::to_string(i), "",
-                        tmp_dir(work_dir_));
-    } else if (memory_level == MemoryLevel::kInMemory) {
-      columns_[i]->open_in_memory(tmp_dir(work_dir_) + "/" + name_ + ".col_" +
-                                  std::to_string(i));
-    } else if (memory_level == MemoryLevel::kHugePagePreferred) {
-      columns_[i]->open_with_hugepages(tmp_dir(work_dir_) + "/" + name_ +
-                                       ".col_" + std::to_string(i));
-    } else {
-      THROW_NOT_IMPLEMENTED_EXCEPTION(
-          "Unsupported memory level: " +
-          std::to_string(static_cast<int>(memory_level)));
-    }
+    columns_[i]->Open(ckp, ModuleDescriptor(), memory_level);
     columns_[i]->resize(capacity, default_property_values[i - old_size]);
   }
 }
@@ -169,7 +147,6 @@ void Table::delete_column(const std::string& col_name) {
   if (it != col_id_map_.end()) {
     int col_id = it->second;
     col_id_map_.erase(it);
-    columns_[col_id]->close();
     columns_[col_id].reset();
     columns_.erase(columns_.begin() + col_id);
     col_names_.erase(col_names_.begin() + col_id);
@@ -209,59 +186,57 @@ std::vector<DataTypeId> Table::column_types() const {
   return types;
 }
 
-std::shared_ptr<ColumnBase> Table::get_column(const std::string& name) {
+ColumnBase* Table::get_column(const std::string& name) {
   auto it = col_id_map_.find(name);
   if (it != col_id_map_.end()) {
     int col_id = it->second;
     if (static_cast<size_t>(col_id) < columns_.size()) {
-      return columns_[col_id];
+      return columns_[col_id].get();
     }
   }
 
   return nullptr;
 }
 
-const std::shared_ptr<ColumnBase> Table::get_column(
-    const std::string& name) const {
+const ColumnBase* Table::get_column(const std::string& name) const {
   auto it = col_id_map_.find(name);
   if (it != col_id_map_.end()) {
     int col_id = it->second;
     if (static_cast<size_t>(col_id) < columns_.size()) {
-      return columns_[col_id];
+      return columns_[col_id].get();
     }
   }
 
   return nullptr;
 }
 
-std::vector<Property> Table::get_row(size_t row_id) const {
-  std::vector<Property> ret;
-  for (auto ptr : columns_) {
-    ret.push_back(ptr->get_prop(row_id));
+std::vector<execution::Value> Table::get_row(size_t row_id) const {
+  std::vector<execution::Value> ret;
+  for (auto& ptr : columns_) {
+    ret.push_back(ptr->get_any(row_id));
   }
   return ret;
 }
 
-std::shared_ptr<ColumnBase> Table::get_column_by_id(size_t index) {
+ColumnBase* Table::get_column_by_id(size_t index) {
   if (index >= columns_.size()) {
     return nullptr;
   } else {
-    return columns_[index];
+    return columns_[index].get();
   }
 }
 
-const std::shared_ptr<ColumnBase> Table::get_column_by_id(size_t index) const {
+const ColumnBase* Table::get_column_by_id(size_t index) const {
   if (index >= columns_.size()) {
     return nullptr;
   } else {
-    return columns_[index];
+    return columns_[index].get();
   }
 }
 
 size_t Table::col_num() const { return columns_.size(); }
-std::vector<std::shared_ptr<ColumnBase>>& Table::columns() { return columns_; }
 
-void Table::insert(size_t index, const std::vector<Property>& values,
+void Table::insert(size_t index, const std::vector<execution::Value>& values,
                    bool insert_safe) {
   assert(values.size() == columns_.size());
   CHECK_EQ(values.size(), columns_.size());
@@ -272,13 +247,13 @@ void Table::insert(size_t index, const std::vector<Property>& values,
 }
 
 void Table::resize(size_t row_num) {
-  for (auto col : columns_) {
+  for (const auto& col : columns_) {
     col->resize(row_num);
   }
 }
 
 void Table::resize(size_t row_num,
-                   const std::vector<Property>& default_values) {
+                   const std::vector<execution::Value>& default_values) {
   if (default_values.size() != columns_.size()) {
     THROW_RUNTIME_ERROR("default_values size mismatch: expected " +
                         std::to_string(columns_.size()) + " but got " +
@@ -311,9 +286,5 @@ void Table::ingest(uint32_t index, OutArchive& arc) {
 }
 
 void Table::close() { columns_.clear(); }
-
-void Table::set_name(const std::string& name) { name_ = name; }
-
-void Table::set_work_dir(const std::string& work_dir) { work_dir_ = work_dir; }
 
 }  // namespace neug
