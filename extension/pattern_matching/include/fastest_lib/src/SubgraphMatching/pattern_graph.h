@@ -42,9 +42,9 @@ using neug::function::PropCons;
 namespace GraphLib::SubgraphMatching {
 class PatternGraph : public Graph {
  public:
-  PatternGraph() {};
-  PatternGraph(const Graph& g) : Graph(g) {};
-  ~PatternGraph() {};
+  PatternGraph(){};
+  PatternGraph(const Graph& g) : Graph(g){};
+  ~PatternGraph(){};
 
   PatternGraph& operator=(const PatternGraph&) = delete;
   PatternGraph(const PatternGraph&) = delete;

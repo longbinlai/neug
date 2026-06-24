@@ -47,8 +47,8 @@ class DataGraph : public GraphLib::Graph {
   LabelStatistics label_statistics;
 
  public:
-  DataGraph(const Graph& g) : Graph(g) {};
-  DataGraph() {};
+  DataGraph(const Graph& g) : Graph(g){};
+  DataGraph(){};
   std::vector<int>& GetVerticesByLabel(int label) {
     return vertex_by_labels[label];
   }
