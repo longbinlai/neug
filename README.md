@@ -42,11 +42,11 @@ pip install neug
 npm install @graphscope-neug/neug
 ```
 
-The packages work on Linux, macOS, and Windows (via WSL2).
-
-For more detailed installation instructions (including C++ from source), please refer to the [installation guide](https://graphscope.io/neug/en/installation/installation).
+The packages work on Linux, macOS, and Windows (via WSL2). For more detailed installation instructions (including C++ from source), please refer to the [installation guide](https://graphscope.io/neug/en/installation/installation).
 
 ## Quick Example
+
+### Python
 
 ```python
 import neug
@@ -75,6 +75,38 @@ for record in result:
 conn.close()
 db.serve(port=8080)
 # Now your application can handle concurrent users
+```
+
+### Node.js
+
+```javascript
+const { Database } = require('@graphscope-neug/neug');
+
+// Step 1: Create an in-memory database and load data (Embedded Mode)
+const db = new Database({ databasePath: '', mode: 'w' });
+const conn = db.connect();
+
+conn.execute("CREATE NODE TABLE person(id INT64, fName STRING, PRIMARY KEY(id));");
+conn.execute("CREATE REL TABLE knows(FROM person TO person);");
+conn.execute("CREATE (:person {id: 1, fName: 'Alice'}), (:person {id: 2, fName: 'Bob'}), (:person {id: 3, fName: 'Carol'});");
+conn.execute("CREATE (:person {id: 1})-[:knows]->(:person {id: 2});");
+conn.execute("CREATE (:person {id: 2})-[:knows]->(:person {id: 3});");
+conn.execute("CREATE (:person {id: 1})-[:knows]->(:person {id: 3});");
+
+// Run analytics - find triangles in the graph
+const result = conn.execute(`
+    MATCH (a:person)-[:knows]->(b:person)-[:knows]->(c:person),
+          (a)-[:knows]->(c)
+    RETURN a.fName, b.fName, c.fName
+`);
+
+// Access results by index
+for (const record of result) {
+    console.log(`${record[0]}, ${record[1]}, ${record[2]} are mutual friends`);
+}
+
+conn.close();
+db.close();
 ```
 
 
