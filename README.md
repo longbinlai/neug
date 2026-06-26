@@ -24,6 +24,7 @@ For more information on using NeuG, please refer to the [NeuG documentation](htt
 
 ## News
 - **2026-06**: NeuG v0.1.3 released — [graph algorithm extensions (GDS)](https://graphscope.io/neug/en/extensions/load_parquet/), [temporary graph computation (`COPY TEMP`)](https://graphscope.io/neug/en/data_io/import_data/), and [Node.js client](https://graphscope.io/neug/en/reference/nodejs_api/)
+- **2026-05**: NeuG v0.1.2 released — [`LOAD FROM`](https://graphscope.io/neug/en/data_io/load_data/) syntax, [Parquet](https://graphscope.io/neug/en/extensions/load_parquet/) and [HTTPFS](https://graphscope.io/neug/en/extensions/load_httpfs/) extensions for cloud-based storage
 - **2026-03**: We officially release NeuG v0.1
 - **2025-06**: We shatter [LDBC SNB Interactive Benchmark world record](https://graphscope.io/blog/tech/2025/06/12/graphscope-flex-achieved-record-breaking-on-ldbc-snb-interactive-workload-declarative) with 80,000+ QPS for declarative queries
 
