@@ -28,25 +28,28 @@ For more information on using NeuG, please refer to the [NeuG documentation](htt
 
 ## Installation
 
-NeuG supports Python and Node.js bindings, as well as C++ for direct embedding.
+NeuG supports Python and Node.js bindings, as well as C++ for direct embedding. The packages work on Linux, macOS, and Windows (via WSL2). For more detailed instructions (including C++ from source), see the [installation guide](https://graphscope.io/neug/en/installation/installation).
 
-**Python** (requires Python 3.8+):
+<details open>
+<summary><b>Python</b> (requires Python 3.8+)</summary>
 
 ```bash
 pip install neug
 ```
+</details>
 
-**Node.js** (requires Node.js 18+, available since v0.1.3):
+<details>
+<summary><b>Node.js</b> (requires Node.js 18+, available since v0.1.3)</summary>
 
 ```bash
 npm install @graphscope-neug/neug
 ```
-
-The packages work on Linux, macOS, and Windows (via WSL2). For more detailed installation instructions (including C++ from source), please refer to the [installation guide](https://graphscope.io/neug/en/installation/installation).
+</details>
 
 ## Quick Example
 
-### Python
+<details open>
+<summary><b>Python</b></summary>
 
 ```python
 import neug
@@ -76,8 +79,10 @@ conn.close()
 db.serve(port=8080)
 # Now your application can handle concurrent users
 ```
+</details>
 
-### Node.js
+<details>
+<summary><b>Node.js</b></summary>
 
 ```javascript
 const { Database } = require('@graphscope-neug/neug');
@@ -108,6 +113,7 @@ for (const record of result) {
 conn.close();
 db.close();
 ```
+</details>
 
 
 ## Development & Contributing
