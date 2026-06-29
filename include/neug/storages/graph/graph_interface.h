@@ -361,6 +361,7 @@ class StorageReadInterface : virtual public IStorageInterface {
 
  private:
   const PropertyGraph* graph_ = nullptr;
+
  protected:
   const GraphView& view_;
   timestamp_t read_ts_;
