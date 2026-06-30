@@ -5,16 +5,18 @@
 # include/util/dynamic_bitset.h). The extension therefore always builds, so its
 # tests can never be silently skipped for a missing optional dependency.
 
+# Collect sources. CONFIGURE_DEPENDS so adding/removing a source file triggers a
+# re-glob on the next build instead of silently using a stale list.
 # Collect FaSTest source files (header-only library with some cpp files)
-file(GLOB_RECURSE FASTEST_LIB_SOURCES
+file(GLOB_RECURSE FASTEST_LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastest_lib/src/**/*.cpp")
 
 # Collect pattern_matching extension source files
-file(GLOB PATTERN_MATCHING_EXTENSION_SOURCES
+file(GLOB PATTERN_MATCHING_EXTENSION_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-file(GLOB DAF_LIB_SOURCES
+file(GLOB DAF_LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/include/daf_lib/src/*.cc")
 
 # Combine all sources
