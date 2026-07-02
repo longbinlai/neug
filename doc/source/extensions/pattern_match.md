@@ -5,11 +5,11 @@ Since NeuG **v0.1.4**, we have introduced the Pattern Match extension, which pro
 
 ```cypher
 CALL PATTERN_MATCH(Pattern, size, is_sampled)
-YIELD *
+[YIELD ...]
 RETURN *;
 ```
 
-- **`Pattern`** — the graph pattern to match, e.g. `'(a:Person)-[r:person_knows_person]->(b:Person)'`. It uses Cypher node/relationship syntax but without the leading `MATCH` keyword. It is a pattern only, not a full query: every node and relationship must be written out explicitly, though an inline `WHERE` is allowed (for node/relationship property filters).
+- **`Pattern`** — the graph pattern to match, e.g. `'(a:Person)-[r:person_knows_person]->(b:Person)'`. It uses Cypher node/relationship syntax. It is a pattern only, not a full query: every node and relationship must be written out explicitly, though an inline `WHERE` is allowed (for node/relationship property filters).
 - **`size`** *(optional)* — a positive integer (`>= 1`). In exact mode it is the early-termination bound (stop after the first `size` matches); in sampled mode it is the sample size.
 - **`is_sampled`** *(optional)* — a boolean choosing the algorithm: `false` → exact matching, `true` → sampled matching (FaSTest). Must be written as `true` / `false` (not `0` / `1`).
 
@@ -19,10 +19,48 @@ RETURN *;
 CALL PATTERN_MATCH('(a:Person)-[r:person_knows_person]->(b:Person)') RETURN *;
 ```
 
-**Supported patterns:** directed relationships (`->` / `<-`) written out explicitly; one label per node, one type per relationship; inline property maps with literal values (`{age: 20}`);
+## Supported Patterns
 
-**Not supported patterns (rejected at bind time):** variable-length / recursive relationships (`-[:R*3]->`, `-[:R*1..3]->`, `-[*]->`), undirected `(a)-[r]-(b)`, multi-label nodes `(a:A:B)`, multi-type relationships `[:A|:B]`, `OPTIONAL MATCH` / `WITH` / `UNION` / mutations, `OR` / `NOT` / `XOR`, cross-variable comparisons (`a.age = b.age`), and computed projections / `ORDER BY` / `SKIP` / `LIMIT`. Write a fixed-length path out one relationship at a time instead of using `*`.
+**Supported:**
 
+- Directed relationships: `->` and `<-`
+- One label per node, one type per relationship
+- Multi-hop paths: `(a)-[r1]->(b)-[r2]->(c)` (write each hop explicitly)
+- Cycles: `(a)-[r1]->(b)-[r2]->(c)-[r3]->(a)`
+- Inline property maps with literal values: `(a:Person {age: 20})`
+- Inline `WHERE` for property-based filtering: `(a:Person)-[r:knows]->(b:Person) WHERE a.age > 25`
+
+**Examples:**
+
+```cypher
+-- Reverse direction
+CALL PATTERN_MATCH('(a:Person)<-[r:person_knows_person]-(b:Person)') RETURN *;
+
+-- Inline property map (only match Person nodes with age = 20)
+CALL PATTERN_MATCH('(a:Person {age: 20})-[r:person_knows_person]->(b:Person)') RETURN *;
+
+-- Inline WHERE (only match edges where source age > 25)
+CALL PATTERN_MATCH('(a:Person)-[r:person_knows_person]->(b:Person) WHERE a.age > 25') RETURN *;
+
+-- Multi-hop path (2 hops)
+CALL PATTERN_MATCH('(a:Person)-[r1:person_knows_person]->(b:Person)-[r2:person_knows_person]->(c:Person)') RETURN *;
+
+-- Triangle cycle (3 hops back to start)
+CALL PATTERN_MATCH('(a:Person)-[r1:person_knows_person]->(b:Person)-[r2:person_knows_person]->(c:Person)-[r3:person_knows_person]->(a:Person)') RETURN *;
+```
+
+**Not supported (rejected at bind time):**
+
+- Variable-length / recursive relationships: `-[:R*3]->`, `-[:R*1..3]->`, `-[*]->`
+- Undirected relationships: `(a)-[r]-(b)`
+- Multi-label nodes: `(a:A:B)`
+- Multi-type relationships: `[:A|:B]`
+- `OPTIONAL MATCH`, `WITH`, `UNION`, mutations
+- `OR`, `NOT`, `XOR` in `WHERE`
+- Cross-variable comparisons: `a.age = b.age`
+- Computed projections, `ORDER BY`, `SKIP`, `LIMIT` inside the pattern
+
+Write a fixed-length path out one relationship at a time instead of using `*`.
 
 ## Install Extension
 
@@ -59,6 +97,12 @@ Output shape — one row per match, vertices as `Vertex` columns and relationshi
 | a | r | b |
 | --- | --- | --- |
 | `Vertex(Person)` | `Edge(person_knows_person)` | `Vertex(Person)` |
+
+For multi-hop patterns, each hop produces its own column:
+
+| a | r1 | b | r2 | c |
+| --- | --- | --- | --- | --- |
+| `Vertex(Person)` | `Edge(person_knows_person)` | `Vertex(Person)` | `Edge(person_knows_person)` | `Vertex(Person)` |
 
 To stop after the first `size` matches (early termination), pass `size` with `is_sampled = false`:
 
