@@ -258,7 +258,7 @@ class PatternMatchingTest : public ::testing::Test {
   }
 
   // Exact subgraph matching: the unified PATTERN_MATCH with a single argument
-  // (no sample size) runs the exact DAF matcher.
+  // (no sample size) runs the exact matcher.
   result<QueryResult> QueryPatternJson(const std::string& pattern_json,
                                        int64_t /*unused_limit*/ = 1000) {
     const auto path = WritePattern(pattern_json);

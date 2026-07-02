@@ -31,7 +31,7 @@
 #include "neug/storages/graph/graph_interface.h"
 
 namespace neug {
-namespace function {
+namespace pattern_matching {
 
 // Hash function for std::pair<label_t, vid_t>
 struct LabelVidHash {
@@ -697,5 +697,5 @@ class DataGraphMeta {
       in_schemas_by_dst_;
 };
 
-}  // namespace function
+}  // namespace pattern_matching
 }  // namespace neug

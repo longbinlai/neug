@@ -43,7 +43,7 @@
 using label_t = neug::label_t;
 
 // #define HUGE_GRAPH
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 class Graph {
  public:
   // Adjacency Lists - for directed graphs
@@ -732,6 +732,6 @@ inline void Graph::WriteToFile(std::string filename) {
     idx++;
   }
 }
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib
 
 // 实现在graph.cpp中，因为需要访问GraphStorage的完整定义

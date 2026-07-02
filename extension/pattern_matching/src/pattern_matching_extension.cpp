@@ -27,30 +27,30 @@ void Init() {
   try {
     // Graph cache bootstrap: loads / prepares the in-memory data graph.
     neug::extension::ExtensionAPI::registerFunction<
-        neug::function::InitializeGraphFunction>(
+        neug::pattern_matching::InitializeGraphFunction>(
         neug::catalog::CatalogEntryType::TABLE_FUNCTION_ENTRY);
 
     // Unified subgraph matching entry: PATTERN_MATCH(cypher) runs exact
-    // matching (DAF) over all matches; PATTERN_MATCH(cypher, size, is_sampled)
+    // matching over all matches; PATTERN_MATCH(cypher, size, is_sampled)
     // runs sampled matching (FaSTest, is_sampled=true) or exact matching with
     // early termination after `size` matches (is_sampled=false).
     neug::extension::ExtensionAPI::registerFunction<
-        neug::function::PatternMatchFunction>(
+        neug::pattern_matching::PatternMatchFunction>(
         neug::catalog::CatalogEntryType::TABLE_FUNCTION_ENTRY);
 
     // Vertex property lookup for matched vertices.
     neug::extension::ExtensionAPI::registerFunction<
-        neug::function::GetVertexPropertyFunction>(
+        neug::pattern_matching::GetVertexPropertyFunction>(
         neug::catalog::CatalogEntryType::TABLE_FUNCTION_ENTRY);
 
     // Edge property lookup for matched edges.
     neug::extension::ExtensionAPI::registerFunction<
-        neug::function::GetEdgePropertyFunction>(
+        neug::pattern_matching::GetEdgePropertyFunction>(
         neug::catalog::CatalogEntryType::TABLE_FUNCTION_ENTRY);
 
     // Persists the prepared graph cache to disk for faster restarts.
     neug::extension::ExtensionAPI::registerFunction<
-        neug::function::SaveSampledmatchCheckpointFunction>(
+        neug::pattern_matching::SaveSampledmatchCheckpointFunction>(
         neug::catalog::CatalogEntryType::TABLE_FUNCTION_ENTRY);
 
     neug::extension::ExtensionAPI::registerExtension(

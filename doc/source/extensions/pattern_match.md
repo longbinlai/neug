@@ -226,3 +226,17 @@ The figure reports end-to-end latency in seconds (log scale). Key observations:
   orders of magnitude faster than the native engine on the large patterns.
 - **Sample-Match** keeps latency low and stable across all six patterns and is
   the fastest option on the larger, high-cardinality patterns (Q2–Q6).
+
+## References
+
+The matching algorithms in this extension draw on the methods and ideas of the
+following works from the SNU CSE Theory & Algorithms group, which we gratefully
+acknowledge:
+
+- **FaSTest** — *Cardinality Estimation of Subgraph Matching: A
+  Filtering-Sampling Approach* (VLDB 2024). The **sampled** matching mode is
+  based on FaSTest. <https://github.com/SNUCSE-CTA/FaSTest>
+- **DAF** — *Efficient Subgraph Matching: Harmonizing Dynamic Programming,
+  Adaptive Matching Order, and Failing Set Together* (SIGMOD 2019). The
+  **exact** matching design was informed by DAF's approach.
+  <https://github.com/SNUCSE-CTA/DAF>

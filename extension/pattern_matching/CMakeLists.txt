@@ -1,5 +1,5 @@
 # This extension has no third-party dependencies beyond what NeuG already
-# vendors: the formerly-required GSL (FaSTest sampling) and Boost (DAF / FaSTest
+# vendors: the formerly-required GSL (FaSTest sampling) and Boost (FaSTest
 # bitsets) were replaced by header-only, dependency-free implementations
 # (include/fastest_lib/.../candidate_tree_sampling.h incomplete_beta and
 # include/util/dynamic_bitset.h). The extension therefore always builds, so its

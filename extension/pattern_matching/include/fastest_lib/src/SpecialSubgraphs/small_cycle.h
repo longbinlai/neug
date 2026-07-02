@@ -25,7 +25,7 @@
 
 #include <glog/logging.h>
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 
 const int MAX_NUM_TRIANGLES = 1000000000;
 const int MAX_NUM_FOUR_CYCLES = 1000000000;
@@ -228,4 +228,4 @@ void Graph::ChibaNishizeki() {
       vertices_by_degree.begin(), vertices_by_degree.end(),
       [this](int a, int b) -> bool { return GetDegree(a) > GetDegree(b); });
 }
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

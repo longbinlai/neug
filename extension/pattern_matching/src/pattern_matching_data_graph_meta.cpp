@@ -18,7 +18,7 @@
 #include <unordered_set>
 
 namespace neug {
-namespace function {
+namespace pattern_matching {
 
 DataGraphMeta::DataGraphMeta(const StorageReadInterface& graph)
     : graph_(graph) {}
@@ -613,5 +613,5 @@ bool DataGraphMeta::LoadFromFile(const std::string& filepath) {
   return true;
 }
 
-}  // namespace function
+}  // namespace pattern_matching
 }  // namespace neug

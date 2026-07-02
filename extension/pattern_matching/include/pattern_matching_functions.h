@@ -62,10 +62,9 @@
 #include "fastest_lib/src/SubgraphMatching/pattern_graph.h"
 #include "pattern_cypher_translator.h"
 #include "pattern_matching_data_graph_meta.h"
-#include "storage/graph_storage.hpp"
 
 namespace neug {
-namespace function {
+namespace pattern_matching {
 
 // Data-graph vertex id used in an exact-match embedding.
 using MatchVertex = uint32_t;
@@ -705,7 +704,8 @@ class SampledSubgraphMatcher {
 
   // Thin wrapper: read the file off disk and delegate to the in-memory
   // text parser. The legacy SAMPLED_PATTERN_MATCH JSON path uses this.
-  std::unique_ptr<GraphLib::SubgraphMatching::PatternGraph>
+  std::unique_ptr<
+      neug::pattern_matching::graphlib::SubgraphMatching::PatternGraph>
   create_pattern_from_json_file(const std::string& pattern_file) {
     std::ifstream fin(pattern_file);
     if (!fin.is_open()) {
@@ -721,7 +721,8 @@ class SampledSubgraphMatcher {
   // Core pattern loader. Takes the JSON text directly so Cypher callers can
   // skip the write-tempfile / re-read / re-parse round-trip. The
   // `origin_label` is purely for log lines (file path or "<inline>").
-  std::unique_ptr<GraphLib::SubgraphMatching::PatternGraph>
+  std::unique_ptr<
+      neug::pattern_matching::graphlib::SubgraphMatching::PatternGraph>
   create_pattern_from_json_text(const std::string& json_content,
                                 const std::string& origin_label);
 
@@ -732,7 +733,9 @@ class SampledSubgraphMatcher {
   // already have the JSON text in memory (e.g. the Cypher translator).
   std::string pattern_file_;
   std::string pattern_json_;
-  std::unique_ptr<GraphLib::SubgraphMatching::PatternGraph> pattern_graph_;
+  std::unique_ptr<
+      neug::pattern_matching::graphlib::SubgraphMatching::PatternGraph>
+      pattern_graph_;
   long long sample_size_;
 
   // Results (per-call, not cached)
@@ -820,7 +823,7 @@ class SampledSubgraphMatcher {
 // GraphDataCache, optionally restoring from a previously saved checkpoint.
 // ============================================================================
 
-struct InitializeGraphInput : public CallFuncInputBase {
+struct InitializeGraphInput : public function::CallFuncInputBase {
   std::string checkpoint_dir;
   InitializeGraphInput() = default;
   explicit InitializeGraphInput(std::string dir)
@@ -831,7 +834,7 @@ struct InitializeGraphInput : public CallFuncInputBase {
 struct InitializeGraphFunction {
   static constexpr const char* name = "INITIALIZE";
 
-  static function_set getFunctionSet();
+  static function::function_set getFunctionSet();
 };
 
 // ============================================================================
@@ -840,7 +843,7 @@ struct InitializeGraphFunction {
 // CALL SAVE_SAMPLEDMATCH_CHECKPOINT('/path/to/checkpoint') RETURN *;
 // ============================================================================
 
-struct SaveSampledmatchCheckpointInput : public CallFuncInputBase {
+struct SaveSampledmatchCheckpointInput : public function::CallFuncInputBase {
   std::string checkpoint_dir;
   explicit SaveSampledmatchCheckpointInput(std::string dir)
       : checkpoint_dir(std::move(dir)) {}
@@ -850,7 +853,7 @@ struct SaveSampledmatchCheckpointInput : public CallFuncInputBase {
 struct SaveSampledmatchCheckpointFunction {
   static constexpr const char* name = "SAVE_SAMPLEDMATCH_CHECKPOINT";
 
-  static function_set getFunctionSet();
+  static function::function_set getFunctionSet();
 };
 
 // ============================================================================
@@ -1160,10 +1163,10 @@ execution::Context build_sampled_native_pattern_context(
     const std::vector<int>& sampled_results, int pattern_vertex_count,
     int sample_count);
 
-std::unique_ptr<TableFuncBindData> bind_pattern_native_output_columns(
-    const TableFuncBindInput* input, const char* log_tag);
+std::unique_ptr<function::TableFuncBindData> bind_pattern_native_output_columns(
+    const function::TableFuncBindInput* input, const char* log_tag);
 
-struct PatternMatchInput : public CallFuncInputBase {
+struct PatternMatchInput : public function::CallFuncInputBase {
   std::string pattern_file_path;
   long long limit;
   PatternMatchInput(std::string path, long long limit)
@@ -1185,7 +1188,7 @@ execution::Context execute_pattern_match_pipeline(
 // FaSTest reads it.
 // ============================================================================
 
-struct SampledMatchInput : public CallFuncInputBase {
+struct SampledMatchInput : public function::CallFuncInputBase {
   std::string pattern_file_path;  // legacy JSON-file path; empty for text flow
   // In-memory JSON pattern, populated by the Cypher text flow.
   std::string pattern_json_text;
@@ -1227,7 +1230,7 @@ execution::Context execute_sampled_match_pipeline(
 struct PatternMatchFunction {
   static constexpr const char* name = "PATTERN_MATCH";
 
-  static function_set getFunctionSet();
+  static function::function_set getFunctionSet();
 };
 
 // ============================================================================
@@ -1237,7 +1240,7 @@ struct PatternMatchFunction {
 //   Output : path of the generated CSV file.
 // ============================================================================
 
-struct GetVertexPropertyInput : public CallFuncInputBase {
+struct GetVertexPropertyInput : public function::CallFuncInputBase {
   std::vector<int64_t> vertex_ids;
   std::string vertex_label;
   std::vector<std::string> property_names;
@@ -1253,7 +1256,7 @@ struct GetVertexPropertyInput : public CallFuncInputBase {
 struct GetVertexPropertyFunction {
   static constexpr const char* name = "GET_VERTEX_PROPERTY";
 
-  static function_set getFunctionSet();
+  static function::function_set getFunctionSet();
 };
 
 // ============================================================================
@@ -1264,7 +1267,7 @@ struct GetVertexPropertyFunction {
 //   Output : path of the generated CSV file.
 // ============================================================================
 
-struct GetEdgePropertyInput : public CallFuncInputBase {
+struct GetEdgePropertyInput : public function::CallFuncInputBase {
   std::vector<std::string> edge_keys;
   std::string edge_label;
   std::vector<std::string> property_names;
@@ -1280,8 +1283,8 @@ struct GetEdgePropertyInput : public CallFuncInputBase {
 struct GetEdgePropertyFunction {
   static constexpr const char* name = "GET_EDGE_PROPERTY";
 
-  static function_set getFunctionSet();
+  static function::function_set getFunctionSet();
 };
 
-}  // namespace function
+}  // namespace pattern_matching
 }  // namespace neug

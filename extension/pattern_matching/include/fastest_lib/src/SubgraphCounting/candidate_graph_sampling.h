@@ -26,9 +26,9 @@
 #include "pattern_matching_data_graph_meta.h"
 
 // Use DataGraphMeta from neug namespace
-using neug::function::DataGraphMeta;
+using neug::pattern_matching::DataGraphMeta;
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 namespace CardinalityEstimation {
 class CandidateGraphSampler {
   CardEstOption opt;
@@ -419,4 +419,4 @@ inline void CandidateGraphSampler::Intersection(int index) {
 }
 
 }  // namespace CardinalityEstimation
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

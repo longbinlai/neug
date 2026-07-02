@@ -32,13 +32,13 @@
 #include <unordered_map>
 #include "DataStructure/graph.h"
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 namespace SubgraphMatching {
 struct LabelStatistics {
   std::vector<double> vertex_label_probability, edge_label_probability;
   double vertex_label_entropy = 0.0, edge_label_entropy = 0.0;
 };
-class DataGraph : public GraphLib::Graph {
+class DataGraph : public neug::pattern_matching::graphlib::Graph {
  protected:
   // array of vertices, grouped by label, ordered by decreasing order of degree
   std::vector<std::vector<int>> vertex_by_labels;
@@ -113,4 +113,4 @@ inline void DataGraph::Preprocess() {
   }
 }
 }  // namespace SubgraphMatching
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

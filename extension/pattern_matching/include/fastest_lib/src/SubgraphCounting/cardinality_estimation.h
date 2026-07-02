@@ -45,9 +45,9 @@
  */
 
 // Use DataGraphMeta from neug namespace
-using neug::function::DataGraphMeta;
+using neug::pattern_matching::DataGraphMeta;
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 using SubgraphMatching::PatternGraph, SubgraphMatching::CandidateSpace;
 namespace CardinalityEstimation {
 class FaSTestCardinalityEstimation {
@@ -127,4 +127,4 @@ class FaSTestCardinalityEstimation {
   };
 };
 }  // namespace CardinalityEstimation
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

@@ -39,11 +39,11 @@
 #include <glog/logging.h>
 
 // Use types from neug namespace
-using neug::function::CompType;
-using neug::function::DataGraphMeta;
-using neug::function::EdgeKey;
-using neug::function::EdgeKeyHash;
-using neug::function::PropCons;
+using neug::pattern_matching::CompType;
+using neug::pattern_matching::DataGraphMeta;
+using neug::pattern_matching::EdgeKey;
+using neug::pattern_matching::EdgeKeyHash;
+using neug::pattern_matching::PropCons;
 using Value = neug::execution::Value;
 
 /**
@@ -51,7 +51,7 @@ using Value = neug::execution::Value;
  * @date 2023-05
  */
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 namespace SubgraphMatching {
 
 // Dedupes "constraint references unknown property" warnings so a typo'd
@@ -1254,4 +1254,4 @@ inline bool CandidateSpace::CheckValueConstraint(
 }
 
 }  // namespace SubgraphMatching
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

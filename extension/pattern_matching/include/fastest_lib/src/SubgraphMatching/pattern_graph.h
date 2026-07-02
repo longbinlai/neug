@@ -29,17 +29,10 @@
 #include "pattern_matching_data_graph_meta.h"
 
 // Use types from neug namespace
-using neug::function::DataGraphMeta;
-using neug::function::PropCons;
+using neug::pattern_matching::DataGraphMeta;
+using neug::pattern_matching::PropCons;
 
-// #include "ortools/linear_solver/linear_solver.h"
-//
-// namespace OR = operations_research;
-// using OR::MPSolver, OR::MPVariable, OR::MPConstraint;
-// std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("PDLP"));
-// const double infinity = solver->infinity();
-
-namespace GraphLib::SubgraphMatching {
+namespace neug::pattern_matching::graphlib::SubgraphMatching {
 class PatternGraph : public Graph {
  public:
   PatternGraph(){};
@@ -123,4 +116,4 @@ inline void PatternGraph::ProcessPattern(
   }
 }
 
-}  // namespace GraphLib::SubgraphMatching
+}  // namespace neug::pattern_matching::graphlib::SubgraphMatching

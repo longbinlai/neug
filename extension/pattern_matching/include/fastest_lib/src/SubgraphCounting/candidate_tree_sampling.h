@@ -29,7 +29,7 @@
 #include "SubgraphMatching/candidate_space.h"
 #include "pattern_matching_data_graph_meta.h"
 
-namespace neug_sampled_match_stats {
+namespace neug::pattern_matching::sampled_match_stats {
 // Regularized incomplete beta function I_x(a,b) — the beta CDF. Header-only
 // replacement for gsl_cdf_beta_P so the extension no longer depends on GSL.
 // Uses the Lentz continued-fraction evaluation (Numerical Recipes betacf/betai)
@@ -137,10 +137,10 @@ inline long double clopper_pearson_upper(long trials, long success,
       beta_quantile(1.0 - alpha, static_cast<double>(success + 1),
                     static_cast<double>(trials - success)));
 }
-}  // namespace neug_sampled_match_stats
+}  // namespace neug::pattern_matching::sampled_match_stats
 
 // Use DataGraphMeta from neug namespace
-using neug::function::DataGraphMeta;
+using neug::pattern_matching::DataGraphMeta;
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -149,7 +149,7 @@ inline int sample_from_distribution(
   return weighted_distr(gen);
 }
 
-namespace GraphLib {
+namespace neug::pattern_matching::graphlib {
 using std::vector;
 using SubgraphMatching::CandidateSpace;
 using SubgraphMatching::PatternGraph;
@@ -517,10 +517,12 @@ class CandidateTreeSampler {
       if (trials >= 1000 and trials % 100 == 0 && success >= sample_size) {
         VLOG(1) << "[FaSTest] trials=" << trials << ", success=" << success
                 << ", sample_size=" << sample_size;
-        long double wplus = neug_sampled_match_stats::clopper_pearson_upper(
-            trials, success, 0.05 / 2);
-        long double wminus = neug_sampled_match_stats::clopper_pearson_lower(
-            trials, success, 0.05 / 2);
+        long double wplus =
+            neug::pattern_matching::sampled_match_stats::clopper_pearson_upper(
+                trials, success, 0.05 / 2);
+        long double wminus =
+            neug::pattern_matching::sampled_match_stats::clopper_pearson_lower(
+                trials, success, 0.05 / 2);
         if (rhohat * 0.8 < wminus && wplus < rhohat * 1.25) {
           timer.Stop();
           break;
@@ -537,4 +539,4 @@ class CandidateTreeSampler {
   }
 };
 }  // namespace CardinalityEstimation
-}  // namespace GraphLib
+}  // namespace neug::pattern_matching::graphlib

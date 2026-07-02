@@ -8,11 +8,11 @@ CALL PATTERN_MATCH(pattern_text_or_file, size, is_sampled)
 ```
 
 - `CALL PATTERN_MATCH(pattern_text_or_file)` — **exact** matching over **all**
-  matches. Runs the DAF integration and validates matches against NeuG's graph
-  storage.
+  matches. Enumerates every embedding with a deterministic adjacency-intersection
+  matcher run directly on NeuG's in-memory graph.
 - `CALL PATTERN_MATCH(pattern_text_or_file, size, is_sampled)` — a bounded call
   whose algorithm is chosen by the boolean `is_sampled` flag:
-  - `is_sampled = false` → **exact** matching (DAF) that **early-terminates**
+  - `is_sampled = false` → **exact** matching that **early-terminates**
     after the first `size` matches are found. Useful when you only need a few
     matches and want to avoid full enumeration.
   - `is_sampled = true` → **sampled** matching (FaSTest) with sample size
@@ -126,13 +126,20 @@ Unsupported expressions such as `OR`, variable-length / recursive relationships
 `SKIP`/`LIMIT`, and undirected relationships fail during bind with the existing
 pattern input parse error path.
 
-The sampled implementation is based on the FaSTest algorithm described in:
+## References
 
-**Cardinality Estimation of Subgraph Matching: A Filtering-Sampling Approach** (VLDB 2024)
+The matching algorithms in this extension draw on the methods and ideas of the
+following works from the SNU CSE Theory & Algorithms group. We gratefully
+acknowledge them:
 
-See the original project note in `include/fastest_lib/README.md`:
-- `Fastest [VLDB 2024]`
-- `Cardinality Estimation of Subgraph Matching: A Filtering-Sampling Approach`
+- **FaSTest** — *Cardinality Estimation of Subgraph Matching: A
+  Filtering-Sampling Approach* (VLDB 2024). The **sampled** matching mode is
+  based on FaSTest (its core is vendored under `include/fastest_lib/`).
+  <https://github.com/SNUCSE-CTA/FaSTest>
+- **DAF** — *Efficient Subgraph Matching: Harmonizing Dynamic Programming,
+  Adaptive Matching Order, and Failing Set Together* (SIGMOD 2019). The
+  **exact** matching design was informed by DAF's approach.
+  <https://github.com/SNUCSE-CTA/DAF>
 
 ## Build Test
 

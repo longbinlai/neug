@@ -1,7 +1,23 @@
+/**
+ * Copyright 2020 Alibaba Group Holding Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * 	http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "pattern_matching_functions.h"
 
 namespace neug {
-namespace function {
+namespace pattern_matching {
 
 // Exact subgraph-isomorphism enumeration via candidate-filtered,
 // adjacency-intersection backtracking (the shared core of RI/GraphQL/CFL).
@@ -320,8 +336,8 @@ execution::Context build_sampled_native_pattern_context(
   return make_native_pattern_context(builders);
 }
 
-std::unique_ptr<TableFuncBindData> bind_pattern_native_output_columns(
-    const TableFuncBindInput* input, const char* log_tag) {
+std::unique_ptr<function::TableFuncBindData> bind_pattern_native_output_columns(
+    const function::TableFuncBindInput* input, const char* log_tag) {
   if (input == nullptr || input->binder == nullptr) {
     THROW_BINDER_EXCEPTION(std::string("[") + log_tag +
                            "] Internal error: table binder is not set.");
@@ -465,8 +481,8 @@ std::unique_ptr<TableFuncBindData> bind_pattern_native_output_columns(
       binder->addToScope(*scope_name, expr);
     }
   }
-  return std::make_unique<TableFuncBindData>(std::move(columns), 0,
-                                             input->params);
+  return std::make_unique<function::TableFuncBindData>(std::move(columns), 0,
+                                                       input->params);
 }
 
 execution::Context execute_pattern_match_pipeline(
@@ -1464,10 +1480,11 @@ double SampledSubgraphMatcher::match() {
                                  cached_data.schema_graph);
 
   // Step 4: Setup cardinality estimation options
-  GraphLib::CardinalityEstimation::CardEstOption opt;
+  neug::pattern_matching::graphlib::CardinalityEstimation::CardEstOption opt;
   opt.MAX_QUERY_VERTEX = std::max(12, pattern_graph_->GetNumVertices());
   opt.MAX_QUERY_EDGE = std::max(24, pattern_graph_->GetNumEdges());
-  opt.structure_filter = GraphLib::SubgraphMatching::NO_STRUCTURE_FILTER;
+  opt.structure_filter =
+      neug::pattern_matching::graphlib::SubgraphMatching::NO_STRUCTURE_FILTER;
   VLOG(1) << "[SAMPLED_PATTERN_MATCH] CardEst options: MAX_QUERY_VERTEX="
           << opt.MAX_QUERY_VERTEX << ", MAX_QUERY_EDGE=" << opt.MAX_QUERY_EDGE;
 
@@ -1475,8 +1492,9 @@ double SampledSubgraphMatcher::match() {
   VLOG(1) << "[SAMPLED_PATTERN_MATCH] Running cardinality estimation, sample "
              "size: "
           << sample_size_;
-  GraphLib::CardinalityEstimation::FaSTestCardinalityEstimation estimator(
-      graph_, *cached_data.data_meta, opt);
+  neug::pattern_matching::graphlib::CardinalityEstimation::
+      FaSTestCardinalityEstimation estimator(graph_, *cached_data.data_meta,
+                                             opt);
   double est = estimator.EstimateEmbeddings(pattern_graph_.get(), sample_size_);
 
   sampled_results_ = estimator.GetSampledResult();
@@ -1518,7 +1536,8 @@ double SampledSubgraphMatcher::match() {
   return est;
 }
 
-std::unique_ptr<GraphLib::SubgraphMatching::PatternGraph>
+std::unique_ptr<
+    neug::pattern_matching::graphlib::SubgraphMatching::PatternGraph>
 SampledSubgraphMatcher::create_pattern_from_json_text(
     const std::string& json_content, const std::string& origin_label) {
   const auto& schema = graph_.schema();
@@ -1534,7 +1553,8 @@ SampledSubgraphMatcher::create_pattern_from_json_text(
     return nullptr;
   }
 
-  auto pattern = std::make_unique<GraphLib::SubgraphMatching::PatternGraph>();
+  auto pattern = std::make_unique<
+      neug::pattern_matching::graphlib::SubgraphMatching::PatternGraph>();
 
   // Parse vertices
   if (!doc.HasMember("vertices") || !doc["vertices"].IsArray()) {
@@ -2353,30 +2373,31 @@ bool read_json_uint64(const rapidjson::Value& value, uint64_t* out) {
   return false;
 }
 
-function_set InitializeGraphFunction::getFunctionSet() {
-  function_set func_set;
+function::function_set InitializeGraphFunction::getFunctionSet() {
+  function::function_set func_set;
 
-  call_output_columns output_cols{{"status", common::DataTypeId::kVarchar},
-                                  {"num_vertices", common::DataTypeId::kInt64},
-                                  {"num_edges", common::DataTypeId::kInt64},
-                                  {"max_degree", common::DataTypeId::kInt64},
-                                  {"degeneracy", common::DataTypeId::kInt64}};
+  function::call_output_columns output_cols{
+      {"status", common::DataTypeId::kVarchar},
+      {"num_vertices", common::DataTypeId::kInt64},
+      {"num_edges", common::DataTypeId::kInt64},
+      {"max_degree", common::DataTypeId::kInt64},
+      {"degeneracy", common::DataTypeId::kInt64}};
 
   // Overload 1: CALL INITIALIZE() — no checkpoint
   {
-    auto func = std::make_unique<NeugCallFunction>(
+    auto func = std::make_unique<function::NeugCallFunction>(
         name, std::vector<common::DataTypeId>{},
-        call_output_columns(output_cols));
+        function::call_output_columns(output_cols));
 
-    func->bindFunc = [](const Schema& schema,
-                        const execution::ContextMeta& ctx_meta,
-                        const ::physical::PhysicalPlan& plan,
-                        int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+    func->bindFunc =
+        [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+           const ::physical::PhysicalPlan& plan,
+           int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
       LOG(INFO) << "[INITIALIZE] Bind: no parameters (full initialization)";
       return std::make_unique<InitializeGraphInput>();
     };
 
-    func->execFunc = [](const CallFuncInputBase& input,
+    func->execFunc = [](const function::CallFuncInputBase& input,
                         IStorageInterface& graph) -> execution::Context {
       auto& init_input = static_cast<const InitializeGraphInput&>(input);
       LOG(INFO) << "[INITIALIZE] Executing graph initialization...";
@@ -2428,14 +2449,14 @@ function_set InitializeGraphFunction::getFunctionSet() {
   // Overload 2: CALL INITIALIZE('/path/to/checkpoint') — try loading from
   // checkpoint first
   {
-    auto func = std::make_unique<NeugCallFunction>(
+    auto func = std::make_unique<function::NeugCallFunction>(
         name, std::vector<common::DataTypeId>{common::DataTypeId::kVarchar},
-        call_output_columns(output_cols));
+        function::call_output_columns(output_cols));
 
-    func->bindFunc = [](const Schema& schema,
-                        const execution::ContextMeta& ctx_meta,
-                        const ::physical::PhysicalPlan& plan,
-                        int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+    func->bindFunc =
+        [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+           const ::physical::PhysicalPlan& plan,
+           int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
       auto& procedure = plan.plan(op_idx).opr().procedure_call();
       std::string checkpoint_dir;
       if (procedure.query().arguments_size() >= 1 &&
@@ -2446,7 +2467,7 @@ function_set InitializeGraphFunction::getFunctionSet() {
       return std::make_unique<InitializeGraphInput>(std::move(checkpoint_dir));
     };
 
-    func->execFunc = [](const CallFuncInputBase& input,
+    func->execFunc = [](const function::CallFuncInputBase& input,
                         IStorageInterface& graph) -> execution::Context {
       auto& init_input = static_cast<const InitializeGraphInput&>(input);
       LOG(INFO) << "[INITIALIZE] Executing with checkpoint_dir: "
@@ -2499,21 +2520,21 @@ function_set InitializeGraphFunction::getFunctionSet() {
   return func_set;
 }
 
-function_set SaveSampledmatchCheckpointFunction::getFunctionSet() {
-  function_set func_set;
+function::function_set SaveSampledmatchCheckpointFunction::getFunctionSet() {
+  function::function_set func_set;
 
-  call_output_columns output_cols{
+  function::call_output_columns output_cols{
       {"status", common::DataTypeId::kVarchar},
       {"checkpoint_dir", common::DataTypeId::kVarchar}};
 
-  auto func = std::make_unique<NeugCallFunction>(
+  auto func = std::make_unique<function::NeugCallFunction>(
       name, std::vector<common::DataTypeId>{common::DataTypeId::kVarchar},
       std::move(output_cols));
 
-  func->bindFunc = [](const Schema& schema,
-                      const execution::ContextMeta& ctx_meta,
-                      const ::physical::PhysicalPlan& plan,
-                      int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+  func->bindFunc =
+      [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+         const ::physical::PhysicalPlan& plan,
+         int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
     auto& procedure = plan.plan(op_idx).opr().procedure_call();
     std::string checkpoint_dir;
     if (procedure.query().arguments_size() >= 1 &&
@@ -2526,7 +2547,7 @@ function_set SaveSampledmatchCheckpointFunction::getFunctionSet() {
         std::move(checkpoint_dir));
   };
 
-  func->execFunc = [](const CallFuncInputBase& input,
+  func->execFunc = [](const function::CallFuncInputBase& input,
                       IStorageInterface& graph) -> execution::Context {
     auto& ckpt_input =
         static_cast<const SaveSampledmatchCheckpointInput&>(input);
@@ -2629,25 +2650,25 @@ std::optional<execution::Value> resolve_sampled_order_value(
                                    order_by.property);
 }
 
-function_set PatternMatchFunction::getFunctionSet() {
-  function_set func_set;
+function::function_set PatternMatchFunction::getFunctionSet() {
+  function::function_set func_set;
 
   // ---- Overload 1: PATTERN_MATCH(cypher) -> exact, enumerate all ----
   {
-    auto func = std::make_unique<NeugCallFunction>(
+    auto func = std::make_unique<function::NeugCallFunction>(
         name, std::vector<common::DataTypeId>{common::DataTypeId::kVarchar});
 
-    auto* table_func = static_cast<TableFunction*>(func.get());
+    auto* table_func = static_cast<function::TableFunction*>(func.get());
     table_func->bindFunc = [](main::ClientContext* /*client_context*/,
-                              const TableFuncBindInput* input)
-        -> std::unique_ptr<TableFuncBindData> {
+                              const function::TableFuncBindInput* input)
+        -> std::unique_ptr<function::TableFuncBindData> {
       return bind_pattern_native_output_columns(input, "PATTERN_MATCH");
     };
 
-    func->bindFunc = [](const Schema& schema,
-                        const execution::ContextMeta& ctx_meta,
-                        const ::physical::PhysicalPlan& plan,
-                        int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+    func->bindFunc =
+        [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+           const ::physical::PhysicalPlan& plan,
+           int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
       (void) schema;
       (void) ctx_meta;
       auto& procedure = plan.plan(op_idx).opr().procedure_call();
@@ -2663,7 +2684,7 @@ function_set PatternMatchFunction::getFunctionSet() {
       return std::make_unique<PatternMatchInput>(std::move(json_file), 0);
     };
 
-    func->execFunc = [](const CallFuncInputBase& input,
+    func->execFunc = [](const function::CallFuncInputBase& input,
                         IStorageInterface& graph) -> execution::Context {
       return execute_pattern_match_pipeline(
           static_cast<const PatternMatchInput&>(input), graph);
@@ -2676,15 +2697,15 @@ function_set PatternMatchFunction::getFunctionSet() {
   //   is_sampled = false -> exact with early termination after `size` matches
   //   is_sampled = true  -> sampled (FaSTest) with sample size `size`
   {
-    auto func = std::make_unique<NeugCallFunction>(
+    auto func = std::make_unique<function::NeugCallFunction>(
         name, std::vector<common::DataTypeId>{common::DataTypeId::kVarchar,
                                               common::DataTypeId::kInt64,
                                               common::DataTypeId::kBoolean});
 
-    auto* table_func = static_cast<TableFunction*>(func.get());
+    auto* table_func = static_cast<function::TableFunction*>(func.get());
     table_func->bindFunc = [](main::ClientContext* /*client_context*/,
-                              const TableFuncBindInput* input)
-        -> std::unique_ptr<TableFuncBindData> {
+                              const function::TableFuncBindInput* input)
+        -> std::unique_ptr<function::TableFuncBindData> {
       // `size` must be a positive integer (>= 1) in both modes: it is the
       // sample size when sampled, and the early-termination bound when exact.
       if (input != nullptr && input->params.size() >= 2) {
@@ -2699,10 +2720,10 @@ function_set PatternMatchFunction::getFunctionSet() {
       return bind_pattern_native_output_columns(input, "PATTERN_MATCH");
     };
 
-    func->bindFunc = [](const Schema& schema,
-                        const execution::ContextMeta& ctx_meta,
-                        const ::physical::PhysicalPlan& plan,
-                        int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+    func->bindFunc =
+        [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+           const ::physical::PhysicalPlan& plan,
+           int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
       (void) schema;
       (void) ctx_meta;
       auto& procedure = plan.plan(op_idx).opr().procedure_call();
@@ -2736,7 +2757,7 @@ function_set PatternMatchFunction::getFunctionSet() {
       return std::make_unique<PatternMatchInput>(std::move(pattern_path), size);
     };
 
-    func->execFunc = [](const CallFuncInputBase& input,
+    func->execFunc = [](const function::CallFuncInputBase& input,
                         IStorageInterface& graph) -> execution::Context {
       // Dispatch on the bound input flavour: SampledMatchInput -> sampler,
       // PatternMatchInput -> exact (early-terminating) matcher.
@@ -2754,14 +2775,14 @@ function_set PatternMatchFunction::getFunctionSet() {
   return func_set;
 }
 
-function_set GetVertexPropertyFunction::getFunctionSet() {
-  function_set func_set;
+function::function_set GetVertexPropertyFunction::getFunctionSet() {
+  function::function_set func_set;
 
   // Output schema: single string column carrying the generated file path.
-  call_output_columns output_cols{
+  function::call_output_columns output_cols{
       {"result_file", common::DataTypeId::kVarchar}};
 
-  auto func = std::make_unique<NeugCallFunction>(
+  auto func = std::make_unique<function::NeugCallFunction>(
       name,
       std::vector<common::DataTypeId>{
           common::DataTypeId::kVarchar,  // vertex_ids as JSON array string
@@ -2770,10 +2791,10 @@ function_set GetVertexPropertyFunction::getFunctionSet() {
       },
       std::move(output_cols));
 
-  func->bindFunc = [](const Schema& schema,
-                      const execution::ContextMeta& ctx_meta,
-                      const ::physical::PhysicalPlan& plan,
-                      int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+  func->bindFunc =
+      [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+         const ::physical::PhysicalPlan& plan,
+         int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
     auto& procedure = plan.plan(op_idx).opr().procedure_call();
 
     std::vector<int64_t> vertex_ids;
@@ -2823,7 +2844,7 @@ function_set GetVertexPropertyFunction::getFunctionSet() {
                                                     std::move(property_names));
   };
 
-  func->execFunc = [](const CallFuncInputBase& input,
+  func->execFunc = [](const function::CallFuncInputBase& input,
                       IStorageInterface& graph) -> execution::Context {
     auto& prop_input = static_cast<const GetVertexPropertyInput&>(input);
 
@@ -2938,14 +2959,14 @@ function_set GetVertexPropertyFunction::getFunctionSet() {
   return func_set;
 }
 
-function_set GetEdgePropertyFunction::getFunctionSet() {
-  function_set func_set;
+function::function_set GetEdgePropertyFunction::getFunctionSet() {
+  function::function_set func_set;
 
   // Output schema: single string column carrying the generated file path.
-  call_output_columns output_cols{
+  function::call_output_columns output_cols{
       {"result_file", common::DataTypeId::kVarchar}};
 
-  auto func = std::make_unique<NeugCallFunction>(
+  auto func = std::make_unique<function::NeugCallFunction>(
       name,
       std::vector<common::DataTypeId>{
           common::DataTypeId::kVarchar,  // edge_keys as JSON array string
@@ -2954,10 +2975,10 @@ function_set GetEdgePropertyFunction::getFunctionSet() {
       },
       std::move(output_cols));
 
-  func->bindFunc = [](const Schema& schema,
-                      const execution::ContextMeta& ctx_meta,
-                      const ::physical::PhysicalPlan& plan,
-                      int op_idx) -> std::unique_ptr<CallFuncInputBase> {
+  func->bindFunc =
+      [](const Schema& schema, const execution::ContextMeta& ctx_meta,
+         const ::physical::PhysicalPlan& plan,
+         int op_idx) -> std::unique_ptr<function::CallFuncInputBase> {
     auto& procedure = plan.plan(op_idx).opr().procedure_call();
 
     std::vector<std::string> edge_keys;
@@ -3003,7 +3024,7 @@ function_set GetEdgePropertyFunction::getFunctionSet() {
         std::move(edge_keys), std::move(edge_label), std::move(property_names));
   };
 
-  func->execFunc = [](const CallFuncInputBase& input,
+  func->execFunc = [](const function::CallFuncInputBase& input,
                       IStorageInterface& graph) -> execution::Context {
     auto& prop_input = static_cast<const GetEdgePropertyInput&>(input);
 
@@ -3179,5 +3200,5 @@ function_set GetEdgePropertyFunction::getFunctionSet() {
   return func_set;
 }
 
-}  // namespace function
+}  // namespace pattern_matching
 }  // namespace neug

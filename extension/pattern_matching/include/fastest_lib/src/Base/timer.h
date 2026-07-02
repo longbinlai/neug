@@ -25,6 +25,9 @@
 
 #include <chrono>
 #include <ctime>
+
+namespace neug::pattern_matching::graphlib {
+
 class Timer {
  public:
   Timer() : time(0.0) {}
@@ -50,3 +53,5 @@ class Timer {
  private:
   std::chrono::high_resolution_clock::time_point s, e;
 };
+
+}  // namespace neug::pattern_matching::graphlib
