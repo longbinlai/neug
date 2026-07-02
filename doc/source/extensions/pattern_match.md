@@ -5,10 +5,11 @@ Since NeuG **v0.1.4**, we have introduced the Pattern Match extension, which pro
 
 ```cypher
 CALL PATTERN_MATCH(Pattern, size, is_sampled)
+YIELD *
 RETURN *;
 ```
 
-- **`Pattern`** — the graph pattern to match, e.g. `'(a:Person)-[r:person_knows_person]->(b:Person)'`. It uses Cypher node/relationship syntax with the leading `MATCH` keyword **optional** (added automatically). It is a pattern only, not a full query: every node and relationship must be written out explicitly, though an inline `WHERE` / `RETURN` is allowed (for property filters and ordering).
+- **`Pattern`** — the graph pattern to match, e.g. `'(a:Person)-[r:person_knows_person]->(b:Person)'`. It uses Cypher node/relationship syntax but without the leading `MATCH` keyword. It is a pattern only, not a full query: every node and relationship must be written out explicitly, though an inline `WHERE` is allowed (for node/relationship property filters).
 - **`size`** *(optional)* — a positive integer (`>= 1`). In exact mode it is the early-termination bound (stop after the first `size` matches); in sampled mode it is the sample size.
 - **`is_sampled`** *(optional)* — a boolean choosing the algorithm: `false` → exact matching, `true` → sampled matching (FaSTest). Must be written as `true` / `false` (not `0` / `1`).
 
@@ -21,8 +22,6 @@ CALL PATTERN_MATCH('(a:Person)-[r:person_knows_person]->(b:Person)') RETURN *;
 **Supported patterns:** directed relationships (`->` / `<-`) written out explicitly; one label per node, one type per relationship; inline property maps with literal values (`{age: 20}`);
 
 **Not supported patterns (rejected at bind time):** variable-length / recursive relationships (`-[:R*3]->`, `-[:R*1..3]->`, `-[*]->`), undirected `(a)-[r]-(b)`, multi-label nodes `(a:A:B)`, multi-type relationships `[:A|:B]`, `OPTIONAL MATCH` / `WITH` / `UNION` / mutations, `OR` / `NOT` / `XOR`, cross-variable comparisons (`a.age = b.age`), and computed projections / `ORDER BY` / `SKIP` / `LIMIT`. Write a fixed-length path out one relationship at a time instead of using `*`.
-
-The pattern can also be a path to a Cypher file, or inline/file JSON in the internal pattern format.
 
 
 ## Install Extension
