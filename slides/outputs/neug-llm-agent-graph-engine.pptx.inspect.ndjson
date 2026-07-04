@@ -1,0 +1,266 @@
+{"kind":"deck","id":"pr/y35dk9","name":"Deck"}
+{"kind":"layout","layoutId":"3149a253-a37d-4e89-b386-3de4c7c2fef5","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"6ba3c27f-329a-49a5-83df-abd81999dc95","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/7gkn6g","slide":1,"title":"NeuG","textShapes":4}
+{"kind":"shape","id":"sh/m58z25kb","slide":1,"bbox":[936,74,250,250]}
+{"kind":"shape","id":"sh/twra5gbq","slide":1,"bbox":[1010,298,170,170]}
+{"kind":"textbox","id":"sh/4byhgn29","slide":1,"text":"NeuG","textPreview":"NeuG","textChars":4,"textLines":1,"bbox":[72,62,220,42]}
+{"kind":"textbox","id":"sh/b2hwfyxo","slide":1,"text":"面向 LLM 与 Agent 的\n嵌入式图数据引擎","textPreview":"面向 LLM 与 Agent 的 | 嵌入式图数据引擎","textChars":25,"textLines":2,"bbox":[72,205,820,160]}
+{"kind":"textbox","id":"sh/mhk3q5o7","slide":1,"text":"支撑企业知识库、自动化分析与未来端侧关联索引","textPreview":"支撑企业知识库、自动化分析与未来端侧关联索引","textChars":22,"textLines":1,"bbox":[76,400,800,64]}
+{"kind":"shape","id":"sh/t83itgfm","slide":1,"bbox":[76,505,180,2]}
+{"kind":"textbox","id":"sh/4nap4r65","slide":1,"text":"高性能图查询  |  轻量嵌入  |  企业知识库  |  自动化分析  |  端侧关联索引","textPreview":"高性能图查询  |  轻量嵌入  |  企业知识库  |  自动化分析  |  端侧关联索引","textChars":46,"textLines":1,"bbox":[76,532,930,30]}
+{"kind":"notes","id":"nt/7gkn6g","slide":1,"text":""}
+{"kind":"slide","id":"sl/1ti07t","slide":2,"title":"WHY NOW","textShapes":11}
+{"kind":"textbox","id":"sh/neloj2t8","slide":2,"text":"WHY NOW","textPreview":"WHY NOW","textChars":7,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/czed8v6p","slide":2,"text":"LLM 与 Agent 需要一个新的数据底座","textPreview":"LLM 与 Agent 需要一个新的数据底座","textChars":22,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/5kb6xkf6","slide":2,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/u54zidon","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/nqxs72x4","slide":2,"text":"纯向量召回只能回答“相似”，但 Agent 真正需要的是“相关”。","textPreview":"纯向量召回只能回答“相似”，但 Agent 真正需要的是“相关”。","textChars":33,"textLines":1,"bbox":[72,190,620,64]}
+{"kind":"shape","id":"sh/cbulwval","slide":2,"bbox":[72,302,335,182]}
+{"kind":"shape","id":"sh/5sneloj2","slide":2,"bbox":[72,302,4,182]}
+{"kind":"textbox","id":"sh/y90je9cv","slide":2,"text":"企业侧","textPreview":"企业侧","textChars":3,"textLines":1,"bbox":[96,324,287,34]}
+{"kind":"textbox","id":"sh/nuxc3ylc","slide":2,"text":"知识散落在文档、代码、会议、客户和业务系统中。LLM 需要可追溯的组织记忆。","textPreview":"知识散落在文档、代码、会议、客户和业务系统中。LLM 需要可追溯的组织记忆。","textChars":38,"textLines":1,"bbox":[96,370,287,94]}
+{"kind":"shape","id":"sh/36hcrmhk","slide":2,"bbox":[462,302,335,182]}
+{"kind":"shape","id":"sh/eloj2t83","slide":2,"bbox":[462,302,4,182]}
+{"kind":"textbox","id":"sh/lc7u54zi","slide":2,"text":"分析侧","textPreview":"分析侧","textChars":3,"textLines":1,"bbox":[486,324,287,34]}
+{"kind":"textbox","id":"sh/wra5gbq1","slide":2,"text":"经营分析不是一次查询，而是沿业务关系连续下钻、解释原因、复用中间结果。","textPreview":"经营分析不是一次查询，而是沿业务关系连续下钻、解释原因、复用中间结果。","textChars":35,"textLines":1,"bbox":[486,370,287,94]}
+{"kind":"shape","id":"sh/7u54zido","slide":2,"bbox":[852,302,335,182]}
+{"kind":"shape","id":"sh/ed8bat47","slide":2,"bbox":[852,302,4,182]}
+{"kind":"textbox","id":"sh/l0rqd4vm","slide":2,"text":"端侧","textPreview":"端侧","textChars":2,"textLines":1,"bbox":[876,324,287,34]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":2,"text":"手机、眼镜等设备需要低延迟、隐私友好的本地关联索引。当前是未来延展方向。","textPreview":"手机、眼镜等设备需要低延迟、隐私友好的本地关联索引。当前是未来延展方向。","textChars":36,"textLines":1,"bbox":[876,370,287,94]}
+{"kind":"notes","id":"nt/1ti07t","slide":2,"text":""}
+{"kind":"slide","id":"sl/ci53ov","slide":3,"title":"POSITIONING","textShapes":11}
+{"kind":"textbox","id":"sh/1orytsvu","slide":3,"text":"POSITIONING","textPreview":"POSITIONING","textChars":11,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/u18jqh0f","slide":3,"text":"NeuG 的定位是嵌入式图数据引擎，而不是单点应用","textPreview":"NeuG 的定位是嵌入式图数据引擎，而不是单点应用","textChars":25,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/jm1cfa9w","slide":3,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/cfa9w3m9","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/1032lszq","slide":3,"text":"NeuG 把图关系、文本、向量、图算法和采样分析收敛到一个轻量高性能底座。","textPreview":"NeuG 把图关系、文本、向量、图算法和采样分析收敛到一个轻量高性能底座。","textChars":37,"textLines":1,"bbox":[72,188,900,54]}
+{"kind":"shape","id":"sh/u9knih4b","slide":3,"bbox":[94,306,132,132]}
+{"kind":"textbox","id":"sh/judg7ads","slide":3,"text":"Graph","textPreview":"Graph","textChars":5,"textLines":1,"bbox":[102,354,116,34]}
+{"kind":"shape","id":"sh/cj6tovah","slide":3,"bbox":[231,371,84,2]}
+{"kind":"shape","id":"sh/54zidony","slide":3,"bbox":[314,306,132,132]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":3,"text":"Vector","textPreview":"Vector","textChars":6,"textLines":1,"bbox":[322,354,116,34]}
+{"kind":"shape","id":"sh/0je9cvix","slide":3,"bbox":[451,371,84,2]}
+{"kind":"shape","id":"sh/byhgn29g","slide":3,"bbox":[534,306,132,132]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":3,"text":"Full-text","textPreview":"Full-text","textChars":9,"textLines":1,"bbox":[542,354,116,34]}
+{"kind":"shape","id":"sh/tcj6tova","slide":3,"bbox":[671,371,84,2]}
+{"kind":"shape","id":"sh/0rqd4vmt","slide":3,"bbox":[754,306,132,132]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":3,"text":"GDS","textPreview":"GDS","textChars":3,"textLines":1,"bbox":[762,354,116,34]}
+{"kind":"shape","id":"sh/il0rqd4v","slide":3,"bbox":[891,371,84,2]}
+{"kind":"shape","id":"sh/tovahoza","slide":3,"bbox":[974,306,132,132]}
+{"kind":"textbox","id":"sh/032lszqt","slide":3,"text":"Sampling","textPreview":"Sampling","textChars":8,"textLines":1,"bbox":[982,354,116,34]}
+{"kind":"textbox","id":"sh/czed8v6p","slide":3,"text":"同一个底座，上接企业知识库与 NeuGBI，下沉到嵌入式 runtime，未来可服务端侧生态。","textPreview":"同一个底座，上接企业知识库与 NeuGBI，下沉到嵌入式 runtime，未来可服务端侧生态。","textChars":47,"textLines":1,"bbox":[186,510,900,38]}
+{"kind":"notes","id":"nt/ci53ov","slide":3,"text":""}
+{"kind":"slide","id":"sl/vixwyk","slide":4,"title":"FOUNDATION 1","textShapes":12}
+{"kind":"textbox","id":"sh/q1orytsv","slide":4,"text":"FOUNDATION 1","textPreview":"FOUNDATION 1","textChars":12,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/xs72x4na","slide":4,"text":"NeuG 已把嵌入式形态做到单机顶级图查询性能","textPreview":"NeuG 已把嵌入式形态做到单机顶级图查询性能","textChars":23,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/87ed8bat","slide":4,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/je9cvixc","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/qtcj6tov","slide":4,"text":"110,000","textPreview":"110,000","textChars":7,"textLines":1,"bbox":[72,206,320,58]}
+{"kind":"textbox","id":"sh/1gvy90je","slide":4,"text":"当前 LDBC-300 标准图测试 QPS","textPreview":"当前 LDBC-300 标准图测试 QPS","textChars":21,"textLines":1,"bbox":[72,268,320,52]}
+{"kind":"textbox","id":"sh/8z25kb6x","slide":4,"text":"80,000","textPreview":"80,000","textChars":6,"textLines":1,"bbox":[430,206,330,58]}
+{"kind":"textbox","id":"sh/fa9w3m94","slide":4,"text":"团队当年 LDBC 打榜成绩 QPS","textPreview":"团队当年 LDBC 打榜成绩 QPS","textChars":18,"textLines":1,"bbox":[430,268,330,52]}
+{"kind":"textbox","id":"sh/qpg3ex0n","slide":4,"text":"百亿边","textPreview":"百亿边","textChars":3,"textLines":1,"bbox":[806,206,330,58]}
+{"kind":"textbox","id":"sh/wjudg7ad","slide":4,"text":"单机大规模图数据处理能力方向","textPreview":"单机大规模图数据处理能力方向","textChars":14,"textLines":1,"bbox":[806,268,330,52]}
+{"kind":"shape","id":"sh/p4r65wju","slide":4,"bbox":[72,394,520,164]}
+{"kind":"shape","id":"sh/ed8v6psf","slide":4,"bbox":[94,416,476,1.5]}
+{"kind":"textbox","id":"sh/7y1kre1w","slide":4,"text":"预留：Mac 单机 LDBC benchmark 对比 Neo4j 图","textPreview":"预留：Mac 单机 LDBC benchmark 对比 Neo4j 图","textChars":35,"textLines":1,"bbox":[102,456,460,44]}
+{"kind":"shape","id":"sh/0bi9s36h","slide":4,"bbox":[650,394,520,164]}
+{"kind":"shape","id":"sh/pwb2hwfy","slide":4,"bbox":[672,416,476,1.5]}
+{"kind":"textbox","id":"sh/i5sneloj","slide":4,"text":"预留：LDBC-300 110,000 QPS 结果截图或柱状图","textPreview":"预留：LDBC-300 110,000 QPS 结果截图或柱状图","textChars":32,"textLines":1,"bbox":[680,456,460,44]}
+{"kind":"notes","id":"nt/vixwyk","slide":4,"text":""}
+{"kind":"slide","id":"sl/jar0no","slide":5,"title":"FOUNDATION 2","textShapes":12}
+{"kind":"textbox","id":"sh/a1gvy90j","slide":5,"text":"FOUNDATION 2","textPreview":"FOUNDATION 2","textChars":12,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/hoza1gvy","slide":5,"text":"NeuG 的轻量体积为端侧适配预留空间","textPreview":"NeuG 的轻量体积为端侧适配预留空间","textChars":19,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/s36hcrmh","slide":5,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/za1gvy90","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/ap4r65wj","slide":5,"text":"21MB","textPreview":"21MB","textChars":4,"textLines":1,"bbox":[92,218,250,58]}
+{"kind":"textbox","id":"sh/hgn29gr2","slide":5,"text":"v0.1.3 pip 安装包大小","textPreview":"v0.1.3 pip 安装包大小","textChars":16,"textLines":1,"bbox":[92,280,250,52]}
+{"kind":"textbox","id":"sh/svu9knih","slide":5,"text":"70MB","textPreview":"70MB","textChars":4,"textLines":1,"bbox":[390,218,250,58]}
+{"kind":"textbox","id":"sh/3ylc7u54","slide":5,"text":"解压后整体体积","textPreview":"解压后整体体积","textChars":7,"textLines":1,"bbox":[390,280,250,52]}
+{"kind":"textbox","id":"sh/adsji5sn","slide":5,"text":"50MB","textPreview":"50MB","textChars":4,"textLines":1,"bbox":[690,218,250,58]}
+{"kind":"textbox","id":"sh/w7mp0bi9","slide":5,"text":"预计仍可继续瘦身空间","textPreview":"预计仍可继续瘦身空间","textChars":10,"textLines":1,"bbox":[690,280,250,52]}
+{"kind":"textbox","id":"sh/psfil0rq","slide":5,"text":"这组数字让“嵌入式”不只是工程口号。NeuG 当前已经足够小，未来经过依赖裁剪和二进制瘦身，可以适配手机、眼镜等更极限的设备环境。","textPreview":"这组数字让“嵌入式”不只是工程口号。NeuG 当前已经足够小，未来经过依赖裁剪和二进制瘦身，可以适配手机、眼镜等更极限的设备环境。","textChars":65,"textLines":1,"bbox":[92,402,930,92]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":5,"text":"端侧是战略延展，不抢当前主线；它为千问眼镜等生态预留了本地关联索引入口。","textPreview":"端侧是战略延展，不抢当前主线；它为千问眼镜等生态预留了本地关联索引入口。","textChars":36,"textLines":1,"bbox":[92,526,930,36]}
+{"kind":"notes","id":"nt/jar0no","slide":5,"text":""}
+{"kind":"slide","id":"sl/sdebk8","slide":6,"title":"CAPABILITY MAP","textShapes":14}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":6,"text":"CAPABILITY MAP","textPreview":"CAPABILITY MAP","textChars":14,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/032lszqt","slide":6,"text":"NeuG 的能力建设围绕 LLM 数据中间层展开","textPreview":"NeuG 的能力建设围绕 LLM 数据中间层展开","textChars":24,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/tovahoza","slide":6,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/i9s36hcr","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"shape","id":"sh/bulwval8","slide":6,"bbox":[76,194,306,154]}
+{"kind":"shape","id":"sh/0fepkzup","slide":6,"bbox":[76,194,4,154]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":6,"text":"Vector Extension","textPreview":"Vector Extension","textChars":16,"textLines":1,"bbox":[100,216,258,34]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":6,"text":"语义召回、相似检索、memory embedding。","textPreview":"语义召回、相似检索、memory embedding。","textChars":27,"textLines":1,"bbox":[100,262,258,66]}
+{"kind":"shape","id":"sh/byhgn29g","slide":6,"bbox":[414,194,306,154]}
+{"kind":"shape","id":"sh/ra5gbq1o","slide":6,"bbox":[414,194,4,154]}
+{"kind":"textbox","id":"sh/2p8nqxs7","slide":6,"text":"Full-text Search","textPreview":"Full-text Search","textChars":16,"textLines":1,"bbox":[438,216,258,34]}
+{"kind":"textbox","id":"sh/9gr2p8nq","slide":6,"text":"关键词、短语、结构化过滤与可解释匹配。","textPreview":"关键词、短语、结构化过滤与可解释匹配。","textChars":19,"textLines":1,"bbox":[438,262,258,66]}
+{"kind":"shape","id":"sh/gvy90je9","slide":6,"bbox":[752,194,306,154]}
+{"kind":"shape","id":"sh/r2p8nqxs","slide":6,"bbox":[752,194,4,154]}
+{"kind":"textbox","id":"sh/2hwfyxob","slide":6,"text":"GDS","textPreview":"GDS","textChars":3,"textLines":1,"bbox":[776,216,258,34]}
+{"kind":"textbox","id":"sh/94fu18jq","slide":6,"text":"PageRank、BFS、SSSP、community detection。","textPreview":"PageRank、BFS、SSSP、community detection。","textChars":38,"textLines":1,"bbox":[776,262,258,66]}
+{"kind":"shape","id":"sh/kjm1cfa9","slide":6,"bbox":[246,404,306,154]}
+{"kind":"shape","id":"sh/rqd4vmtw","slide":6,"bbox":[246,404,4,154]}
+{"kind":"textbox","id":"sh/25kb6xkf","slide":6,"text":"Data Pipeline","textPreview":"Data Pipeline","textChars":13,"textLines":1,"bbox":[270,426,258,34]}
+{"kind":"textbox","id":"sh/a5gbq1or","slide":6,"text":"S3/OSS、Parquet、COPY TEMP，接入企业数据湖。","textPreview":"S3/OSS、Parquet、COPY TEMP，接入企业数据湖。","textChars":33,"textLines":1,"bbox":[270,472,258,66]}
+{"kind":"shape","id":"sh/3m94fu18","slide":6,"bbox":[584,404,306,154]}
+{"kind":"shape","id":"sh/s72x4nap","slide":6,"bbox":[584,404,4,154]}
+{"kind":"textbox","id":"sh/lszqtcj6","slide":6,"text":"Sampling","textPreview":"Sampling","textChars":8,"textLines":1,"bbox":[608,426,258,34]}
+{"kind":"textbox","id":"sh/adsji5sn","slide":6,"text":"支撑 agent 在大规模数据上保持交互式分析时效。","textPreview":"支撑 agent 在大规模数据上保持交互式分析时效。","textChars":26,"textLines":1,"bbox":[608,472,258,66]}
+{"kind":"notes","id":"nt/sdebk8","slide":6,"text":""}
+{"kind":"slide","id":"sl/8gbmhn","slide":7,"title":"LLM MEMORY","textShapes":11}
+{"kind":"textbox","id":"sh/k3q5o7qp","slide":7,"text":"LLM MEMORY","textPreview":"LLM MEMORY","textChars":10,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/vixczed8","slide":7,"text":"企业知识库需要图、向量和全文统一工作","textPreview":"企业知识库需要图、向量和全文统一工作","textChars":18,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/2x4nap4r","slide":7,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/dcbulwva","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/kre1w7mp","slide":7,"text":"纯 RAG 容易把知识切碎；NeuG 更适合保留实体、关系、来源和上下文。","textPreview":"纯 RAG 容易把知识切碎；NeuG 更适合保留实体、关系、来源和上下文。","textChars":37,"textLines":1,"bbox":[72,184,920,46]}
+{"kind":"shape","id":"sh/val87ed8","slide":7,"bbox":[80,278,310,188]}
+{"kind":"shape","id":"sh/6psfil0r","slide":7,"bbox":[80,278,4,188]}
+{"kind":"textbox","id":"sh/d8bat47y","slide":7,"text":"更准召回","textPreview":"更准召回","textChars":4,"textLines":1,"bbox":[104,300,262,34]}
+{"kind":"textbox","id":"sh/knih4byh","slide":7,"text":"向量负责语义相似，全文负责精确匹配，图关系负责上下文扩展。","textPreview":"向量负责语义相似，全文负责精确匹配，图关系负责上下文扩展。","textChars":29,"textLines":1,"bbox":[104,346,262,100]}
+{"kind":"shape","id":"sh/uxc3ylc7","slide":7,"bbox":[486,278,310,188]}
+{"kind":"shape","id":"sh/ji5snelo","slide":7,"bbox":[486,278,4,188]}
+{"kind":"textbox","id":"sh/c3ylc7u5","slide":7,"text":"更可追溯","textPreview":"更可追溯","textChars":4,"textLines":1,"bbox":[510,300,262,34]}
+{"kind":"textbox","id":"sh/1kre1w7m","slide":7,"text":"文档、代码、会议、人员、项目和决策都可以保留引用链路。","textPreview":"文档、代码、会议、人员、项目和决策都可以保留引用链路。","textChars":27,"textLines":1,"bbox":[510,346,262,100]}
+{"kind":"shape","id":"sh/ulwval87","slide":7,"bbox":[892,278,310,188]}
+{"kind":"shape","id":"sh/j6tovaho","slide":7,"bbox":[892,278,4,188]}
+{"kind":"textbox","id":"sh/crmhk3q5","slide":7,"text":"更能沉淀","textPreview":"更能沉淀","textChars":4,"textLines":1,"bbox":[916,300,262,34]}
+{"kind":"textbox","id":"sh/1cfa9w3m","slide":7,"text":"组织记忆不再只是 prompt 历史，而是可更新、可查询的数据资产。","textPreview":"组织记忆不再只是 prompt 历史，而是可更新、可查询的数据资产。","textChars":34,"textLines":1,"bbox":[916,346,262,100]}
+{"kind":"notes","id":"nt/8gbmhn","slide":7,"text":""}
+{"kind":"slide","id":"sl/hqg3vx","slide":8,"title":"GRAPH DATA SCIENCE","textShapes":8}
+{"kind":"textbox","id":"sh/fepkzupw","slide":8,"text":"GRAPH DATA SCIENCE","textPreview":"GRAPH DATA SCIENCE","textChars":18,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/4zidonyd","slide":8,"text":"GDS 让知识库和 BI 从检索走向结构洞察","textPreview":"GDS 让知识库和 BI 从检索走向结构洞察","textChars":22,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/xkf6dcbu","slide":8,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/mlkjm1cf","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"shape","id":"sh/f6dcbulw","slide":8,"bbox":[72,188,520,352]}
+{"kind":"shape","id":"sh/4r65wjud","slide":8,"bbox":[94,210,476,1.5]}
+{"kind":"textbox","id":"sh/xc3ylc7u","slide":8,"text":"预留：GDS 算法能力图谱或调用流程图","textPreview":"预留：GDS 算法能力图谱或调用流程图","textChars":19,"textLines":1,"bbox":[102,344,460,44]}
+{"kind":"textbox","id":"sh/m94fu18j","slide":8,"text":"图算法直接在数据库内运行，避免把数据搬到外部工具。","textPreview":"图算法直接在数据库内运行，避免把数据搬到外部工具。","textChars":25,"textLines":1,"bbox":[650,196,486,54]}
+{"kind":"textbox","id":"sh/fu18jqh0","slide":8,"text":"PageRank 用于重要节点排序\nBFS / DFS 用于自动探索路径\nCommunity detection 用于发现业务群组\nSSSP / WCC 用于路径和连通性分析","textPreview":"PageRank 用于重要节点排序 | BFS / DFS 用于自动探索路径 | Community detection 用于发现业务群组 | SSSP / WCC 用于路径和连通性分析","textChars":87,"textLines":4,"bbox":[650,294,486,170]}
+{"kind":"textbox","id":"sh/r65wjudg","slide":8,"text":"业务意义：企业数据不只是被查到，而是能产生结构性解释。","textPreview":"业务意义：企业数据不只是被查到，而是能产生结构性解释。","textChars":27,"textLines":1,"bbox":[650,506,500,42]}
+{"kind":"notes","id":"nt/hqg3vx","slide":8,"text":""}
+{"kind":"slide","id":"sl/r63gt2","slide":9,"title":"DATA PIPELINE","textShapes":13}
+{"kind":"textbox","id":"sh/ap4r65wj","slide":9,"text":"DATA PIPELINE","textPreview":"DATA PIPELINE","textChars":13,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/hgn29gr2","slide":9,"text":"NeuG 可以接入现有数据湖，而不是制造新的数据孤岛","textPreview":"NeuG 可以接入现有数据湖，而不是制造新的数据孤岛","textChars":26,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/svu9knih","slide":9,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/zidonyd0","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/a1gvy90j","slide":9,"text":"v0.1.2 以来的数据管道能力，让 NeuG 更像企业数据流里的图计算层。","textPreview":"v0.1.2 以来的数据管道能力，让 NeuG 更像企业数据流里的图计算层。","textChars":38,"textLines":1,"bbox":[72,184,920,42]}
+{"kind":"shape","id":"sh/hoza1gvy","slide":9,"bbox":[80,310,220,118]}
+{"kind":"textbox","id":"sh/s36hcrmh","slide":9,"text":"OSS / S3","textPreview":"OSS / S3","textChars":8,"textLines":1,"bbox":[98,334,184,30]}
+{"kind":"textbox","id":"sh/3m94fu18","slide":9,"text":"远程 Parquet 直读","textPreview":"远程 Parquet 直读","textChars":13,"textLines":1,"bbox":[98,374,184,34]}
+{"kind":"shape","id":"sh/a5gbq1or","slide":9,"bbox":[312,366,48,2]}
+{"kind":"shape","id":"sh/kf6dcbul","slide":9,"bbox":[372,310,220,118]}
+{"kind":"textbox","id":"sh/d0z61032","slide":9,"text":"Schema-on-read","textPreview":"Schema-on-read","textChars":14,"textLines":1,"bbox":[390,334,184,30]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":9,"text":"自动推断列与类型","textPreview":"自动推断列与类型","textChars":8,"textLines":1,"bbox":[390,374,184,34]}
+{"kind":"shape","id":"sh/vu9knih4","slide":9,"bbox":[604,366,48,2]}
+{"kind":"shape","id":"sh/knih4byh","slide":9,"bbox":[664,310,220,118]}
+{"kind":"textbox","id":"sh/d8bat47y","slide":9,"text":"Graph Query","textPreview":"Graph Query","textChars":11,"textLines":1,"bbox":[682,334,184,30]}
+{"kind":"textbox","id":"sh/2lszqtcj","slide":9,"text":"图查询与图算法","textPreview":"图查询与图算法","textChars":7,"textLines":1,"bbox":[682,374,184,34]}
+{"kind":"shape","id":"sh/v6psfil0","slide":9,"bbox":[896,366,48,2]}
+{"kind":"shape","id":"sh/kre1w7mp","slide":9,"bbox":[956,310,220,118]}
+{"kind":"textbox","id":"sh/dcbulwva","slide":9,"text":"Parquet Writeback","textPreview":"Parquet Writeback","textChars":17,"textLines":1,"bbox":[974,334,184,30]}
+{"kind":"textbox","id":"sh/h0fepkzu","slide":9,"text":"结果写回数据湖","textPreview":"结果写回数据湖","textChars":7,"textLines":1,"bbox":[974,374,184,34]}
+{"kind":"notes","id":"nt/r63gt2","slide":9,"text":""}
+{"kind":"slide","id":"sl/ea53hl","slide":10,"title":"BUSINESS APPLICATION","textShapes":10}
+{"kind":"textbox","id":"sh/032lszqt","slide":10,"text":"BUSINESS APPLICATION","textPreview":"BUSINESS APPLICATION","textChars":20,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":10,"text":"NeuGBI 把 BI 从“问数”推进到“自动分析”","textPreview":"NeuGBI 把 BI 从“问数”推进到“自动分析”","textChars":26,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/ixczed8v","slide":10,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/0fepkzup","slide":10,"text":"ChatBI 解决自然语言到查询；NeuGBI 解决如何沿业务关系持续下钻。","textPreview":"ChatBI 解决自然语言到查询；NeuGBI 解决如何沿业务关系持续下钻。","textChars":38,"textLines":1,"bbox":[72,184,940,42]}
+{"kind":"shape","id":"sh/bulwval8","slide":10,"bbox":[90,282,468,198]}
+{"kind":"shape","id":"sh/i9s36hcr","slide":10,"bbox":[90,282,4,198]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":10,"text":"ChatBI","textPreview":"ChatBI","textChars":6,"textLines":1,"bbox":[114,304,420,34]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":10,"text":"面向报表和 SQL 生成。问题通常被转成一次查询，后续追问依赖人工继续建模。","textPreview":"面向报表和 SQL 生成。问题通常被转成一次查询，后续追问依赖人工继续建模。","textChars":38,"textLines":1,"bbox":[114,350,420,110]}
+{"kind":"shape","id":"sh/a5gbq1or","slide":10,"bbox":[704,282,468,198]}
+{"kind":"shape","id":"sh/3m94fu18","slide":10,"bbox":[704,282,4,198]}
+{"kind":"textbox","id":"sh/s72x4nap","slide":10,"text":"NeuGBI","textPreview":"NeuGBI","textChars":6,"textLines":1,"bbox":[728,304,420,34]}
+{"kind":"textbox","id":"sh/lszqtcj6","slide":10,"text":"基于图和超图重新建模。Agent 可以自动扩展维度、复用中间结果、沿关系分析原因。","textPreview":"基于图和超图重新建模。Agent 可以自动扩展维度、复用中间结果、沿关系分析原因。","textChars":41,"textLines":1,"bbox":[728,350,420,110]}
+{"kind":"textbox","id":"sh/adsji5sn","slide":10,"text":"核心变化：从生成图表，升级为生成分析路径。","textPreview":"核心变化：从生成图表，升级为生成分析路径。","textChars":21,"textLines":1,"bbox":[310,534,660,36]}
+{"kind":"notes","id":"nt/ea53hl","slide":10,"text":""}
+{"kind":"slide","id":"sl/ikx4s8","slide":11,"title":"NEUGBI ENGINE","textShapes":11}
+{"kind":"textbox","id":"sh/rmhk3q5o","slide":11,"text":"NEUGBI ENGINE","textPreview":"NEUGBI ENGINE","textChars":13,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/g7adsji5","slide":11,"text":"NeuGBI 的差异化来自图探索、图分析和端到端采样","textPreview":"NeuGBI 的差异化来自图探索、图分析和端到端采样","textChars":26,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/9s36hcrm","slide":11,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/yd0z6103","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"shape","id":"sh/rytsvu9k","slide":11,"bbox":[82,196,326,260]}
+{"kind":"shape","id":"sh/gfmlkjm1","slide":11,"bbox":[82,196,4,260]}
+{"kind":"textbox","id":"sh/90je9cvi","slide":11,"text":"自动下钻","textPreview":"自动下钻","textChars":4,"textLines":1,"bbox":[106,218,278,34]}
+{"kind":"textbox","id":"sh/ylc7u54z","slide":11,"text":"沿业务图做 BFS / DFS 式探索，自动发现可解释的下一层维度。","textPreview":"沿业务图做 BFS / DFS 式探索，自动发现可解释的下一层维度。","textChars":34,"textLines":1,"bbox":[106,264,278,172]}
+{"kind":"shape","id":"sh/r65wjudg","slide":11,"bbox":[478,196,326,260]}
+{"kind":"shape","id":"sh/vahoza1g","slide":11,"bbox":[478,196,4,260]}
+{"kind":"textbox","id":"sh/6tovahoz","slide":11,"text":"图分析指标","textPreview":"图分析指标","textChars":5,"textLines":1,"bbox":[502,218,278,34]}
+{"kind":"textbox","id":"sh/dg7adsji","slide":11,"text":"把 PageRank、community detection 等结构指标引入 BI，而不只看聚合值。","textPreview":"把 PageRank、community detection 等结构指标引入 BI，而不只看聚合值。","textChars":50,"textLines":1,"bbox":[502,264,278,172]}
+{"kind":"shape","id":"sh/ovahoza1","slide":11,"bbox":[874,196,326,260]}
+{"kind":"shape","id":"sh/z25kb6xk","slide":11,"bbox":[874,196,4,260]}
+{"kind":"textbox","id":"sh/6hcrmhk3","slide":11,"text":"端到端采样","textPreview":"端到端采样","textChars":5,"textLines":1,"bbox":[898,218,278,34]}
+{"kind":"textbox","id":"sh/d8v6psfi","slide":11,"text":"让大规模数据分析保持时效性，适合 agent 多轮探索。","textPreview":"让大规模数据分析保持时效性，适合 agent 多轮探索。","textChars":28,"textLines":1,"bbox":[898,264,278,172]}
+{"kind":"shape","id":"sh/onyd0z61","slide":11,"bbox":[208,500,862,72]}
+{"kind":"shape","id":"sh/vy90je9c","slide":11,"bbox":[230,522,818,1.5]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":11,"text":"预留：问题 -> 自动下钻路径 -> 业务洞察流程图","textPreview":"预留：问题 -> 自动下钻路径 -> 业务洞察流程图","textChars":26,"textLines":1,"bbox":[238,516,802,44]}
+{"kind":"notes","id":"nt/ikx4s8","slide":11,"text":""}
+{"kind":"slide","id":"sl/n38q07","slide":12,"title":"CASE PLACEHOLDER","textShapes":8}
+{"kind":"textbox","id":"sh/1w7mp0bi","slide":12,"text":"CASE PLACEHOLDER","textPreview":"CASE PLACEHOLDER","textChars":16,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/q5o7qpg3","slide":12,"text":"NeuGBI 的业务表达应贴近经营分析场景","textPreview":"NeuGBI 的业务表达应贴近经营分析场景","textChars":21,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/jqh0fepk","slide":12,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/8nqxs72x","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/18jqh0fe","slide":12,"text":"建议使用“招聘与岗位变化分析”一类案例，保留多维下钻价值，避免学术研究案例抢走业务主线。","textPreview":"建议使用“招聘与岗位变化分析”一类案例，保留多维下钻价值，避免学术研究案例抢走业务主线。","textChars":44,"textLines":1,"bbox":[72,186,960,58]}
+{"kind":"shape","id":"sh/qh0fepkz","slide":12,"bbox":[74,292,500,220]}
+{"kind":"shape","id":"sh/j2t83itg","slide":12,"bbox":[96,314,456,1.5]}
+{"kind":"textbox","id":"sh/crmhk3q5","slide":12,"text":"预留：行业 -> 地区 -> 职级 -> 岗位 的自动分析路径","textPreview":"预留：行业 -> 地区 -> 职级 -> 岗位 的自动分析路径","textChars":31,"textLines":1,"bbox":[104,382,440,44]}
+{"kind":"textbox","id":"sh/1cfa9w3m","slide":12,"text":"可展示的结果形态","textPreview":"可展示的结果形态","textChars":8,"textLines":1,"bbox":[660,298,360,34]}
+{"kind":"textbox","id":"sh/1gvy90je","slide":12,"text":"1. Agent 自动拆解问题\n2. 沿业务关系扩展维度\n3. 给出趋势、原因和异常群组\n4. 支持回溯到数据来源","textPreview":"1. Agent 自动拆解问题 | 2. 沿业务关系扩展维度 | 3. 给出趋势、原因和异常群组 | 4. 支持回溯到数据来源","textChars":57,"textLines":4,"bbox":[660,354,420,156]}
+{"kind":"notes","id":"nt/n38q07","slide":12,"text":""}
+{"kind":"slide","id":"sl/9vu95j","slide":13,"title":"RESEARCH FRONTIER","textShapes":11}
+{"kind":"textbox","id":"sh/kzupwb2h","slide":13,"text":"RESEARCH FRONTIER","textPreview":"RESEARCH FRONTIER","textChars":17,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/re1w7mp0","slide":13,"text":"SpecDB 是团队面向未来数据库形态的研究壁垒","textPreview":"SpecDB 是团队面向未来数据库形态的研究壁垒","textChars":24,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/2t83itgf","slide":13,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/9w3m94fu","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/kb6xkf6d","slide":13,"text":"核心问题：能否让 LLM 直接生成满足特定工作负载需求的数据库系统？","textPreview":"核心问题：能否让 LLM 直接生成满足特定工作负载需求的数据库系统？","textChars":34,"textLines":1,"bbox":[72,184,900,44]}
+{"kind":"textbox","id":"sh/rqd4vmtw","slide":13,"text":"TPC-C","textPreview":"TPC-C","textChars":5,"textLines":1,"bbox":[92,288,360,58]}
+{"kind":"textbox","id":"sh/25kb6xkf","slide":13,"text":"最新生成版本吞吐超过 PostgreSQL","textPreview":"最新生成版本吞吐超过 PostgreSQL","textChars":21,"textLines":1,"bbox":[92,350,360,52]}
+{"kind":"textbox","id":"sh/94fu18jq","slide":13,"text":"TPC-H","textPreview":"TPC-H","textChars":5,"textLines":1,"bbox":[500,288,360,58]}
+{"kind":"textbox","id":"sh/kjm1cfa9","slide":13,"text":"最新生成版本时延超过 DuckDB","textPreview":"最新生成版本时延超过 DuckDB","textChars":17,"textLines":1,"bbox":[500,350,360,52]}
+{"kind":"textbox","id":"sh/mlkjm1cf","slide":13,"text":"这不是当前业务主线，但它会反哺 NeuG 的模块化、测试、优化器和自动生成能力。","textPreview":"这不是当前业务主线，但它会反哺 NeuG 的模块化、测试、优化器和自动生成能力。","textChars":40,"textLines":1,"bbox":[92,458,860,54]}
+{"kind":"shape","id":"sh/f6dcbulw","slide":13,"bbox":[936,268,218,210]}
+{"kind":"shape","id":"sh/4r65wjud","slide":13,"bbox":[958,290,174,1.5]}
+{"kind":"textbox","id":"sh/xc3ylc7u","slide":13,"text":"预留：SpecDB pipeline 图","textPreview":"预留：SpecDB pipeline 图","textChars":20,"textLines":1,"bbox":[966,353,158,44]}
+{"kind":"notes","id":"nt/9vu95j","slide":13,"text":""}
+{"kind":"slide","id":"sl/w60kwd","slide":14,"title":"FUTURE OPTION","textShapes":11}
+{"kind":"textbox","id":"sh/bulwval8","slide":14,"text":"FUTURE OPTION","textPreview":"FUTURE OPTION","textChars":13,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/0fepkzup","slide":14,"text":"端侧关联索引是未来生态延展，不是当前汇报主轴","textPreview":"端侧关联索引是未来生态延展，不是当前汇报主轴","textChars":22,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":14,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/ixczed8v","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":14,"text":"NeuG 的高性能和轻量体积，为千问眼镜、手机、可穿戴、车载和机器人预留了本地数据引擎入口。","textPreview":"NeuG 的高性能和轻量体积，为千问眼镜、手机、可穿戴、车载和机器人预留了本地数据引擎入口。","textChars":46,"textLines":1,"bbox":[72,184,960,58]}
+{"kind":"shape","id":"sh/032lszqt","slide":14,"bbox":[84,294,320,186]}
+{"kind":"shape","id":"sh/tovahoza","slide":14,"bbox":[84,294,4,186]}
+{"kind":"textbox","id":"sh/il0rqd4v","slide":14,"text":"本地记忆","textPreview":"本地记忆","textChars":4,"textLines":1,"bbox":[108,316,272,34]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":14,"text":"人物、地点、事件、对话和任务在端上形成长期关联。","textPreview":"人物、地点、事件、对话和任务在端上形成长期关联。","textChars":24,"textLines":1,"bbox":[108,362,272,98]}
+{"kind":"shape","id":"sh/32lszqtc","slide":14,"bbox":[480,294,320,186]}
+{"kind":"shape","id":"sh/ahoza1gv","slide":14,"bbox":[480,294,4,186]}
+{"kind":"textbox","id":"sh/l87ed8ba","slide":14,"text":"低延迟与隐私","textPreview":"低延迟与隐私","textChars":6,"textLines":1,"bbox":[504,316,272,34]}
+{"kind":"textbox","id":"sh/sneloj2t","slide":14,"text":"常用上下文不必每次上云，关键个人数据可以本地检索。","textPreview":"常用上下文不必每次上云，关键个人数据可以本地检索。","textChars":25,"textLines":1,"bbox":[504,362,272,98]}
+{"kind":"shape","id":"sh/3ex0nuxc","slide":14,"bbox":[876,294,320,186]}
+{"kind":"shape","id":"sh/at47y1kr","slide":14,"bbox":[876,294,4,186]}
+{"kind":"textbox","id":"sh/lkjm1cfa","slide":14,"text":"生态入口","textPreview":"生态入口","textChars":4,"textLines":1,"bbox":[900,316,272,34]}
+{"kind":"textbox","id":"sh/szqtcj6t","slide":14,"text":"千问眼镜等设备需要的不只是模型，也需要可持续积累的关联索引。","textPreview":"千问眼镜等设备需要的不只是模型，也需要可持续积累的关联索引。","textChars":30,"textLines":1,"bbox":[900,362,272,98]}
+{"kind":"notes","id":"nt/w60kwd","slide":14,"text":""}
+{"kind":"slide","id":"sl/srht5i","slide":15,"title":"ROADMAP","textShapes":11}
+{"kind":"textbox","id":"sh/v6psfil0","slide":15,"text":"ROADMAP","textPreview":"ROADMAP","textChars":7,"textLines":1,"bbox":[72,46,620,24]}
+{"kind":"textbox","id":"sh/knih4byh","slide":15,"text":"下一步要把底座能力收敛成可展示的业务闭环","textPreview":"下一步要把底座能力收敛成可展示的业务闭环","textChars":20,"textLines":1,"bbox":[72,76,1040,92]}
+{"kind":"textbox","id":"sh/d8bat47y","slide":15,"text":"NeuG confidential draft","textPreview":"NeuG confidential draft","textChars":23,"textLines":1,"bbox":[72,666,260,18]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":15,"text":"15","textPreview":"15","textChars":2,"textLines":1,"bbox":[1166,658,42,24]}
+{"kind":"shape","id":"sh/vu9knih4","slide":15,"bbox":[82,194,330,252]}
+{"kind":"shape","id":"sh/kf6dcbul","slide":15,"bbox":[82,194,4,252]}
+{"kind":"textbox","id":"sh/d0z61032","slide":15,"text":"近期","textPreview":"近期","textChars":2,"textLines":1,"bbox":[106,216,282,34]}
+{"kind":"textbox","id":"sh/2x4nap4r","slide":15,"text":"完成 vector extension 和 full-text，形成企业知识库与组织记忆 demo。","textPreview":"完成 vector extension 和 full-text，形成企业知识库与组织记忆 demo。","textChars":50,"textLines":1,"bbox":[106,262,282,164]}
+{"kind":"shape","id":"sh/vixczed8","slide":15,"bbox":[476,194,330,252]}
+{"kind":"shape","id":"sh/vmtwra5g","slide":15,"bbox":[476,194,4,252]}
+{"kind":"textbox","id":"sh/61032lsz","slide":15,"text":"中期","textPreview":"中期","textChars":2,"textLines":1,"bbox":[500,216,282,34]}
+{"kind":"textbox","id":"sh/dsji5sne","slide":15,"text":"GDS 与 NeuGBI 深度集成，打磨企业经营分析 demo。","textPreview":"GDS 与 NeuGBI 深度集成，打磨企业经营分析 demo。","textChars":32,"textLines":1,"bbox":[500,262,282,164]}
+{"kind":"shape","id":"sh/o7qpg3ex","slide":15,"bbox":[870,194,330,252]}
+{"kind":"shape","id":"sh/vy90je9c","slide":15,"bbox":[870,194,4,252]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":15,"text":"长期","textPreview":"长期","textChars":2,"textLines":1,"bbox":[894,216,282,34]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":15,"text":"推进 SpecDB 研究，探索千问眼镜等端侧关联索引场景。","textPreview":"推进 SpecDB 研究，探索千问眼镜等端侧关联索引场景。","textChars":29,"textLines":1,"bbox":[894,262,282,164]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":15,"text":"汇报结论：NeuG 是一套能同时承载高性能图查询、LLM 数据中间层和未来端侧关联索引的嵌入式图数据引擎。","textPreview":"汇报结论：NeuG 是一套能同时承载高性能图查询、LLM 数据中间层和未来端侧关联索引的嵌入式图数据引擎。","textChars":53,"textLines":1,"bbox":[110,518,1060,50]}
+{"kind":"notes","id":"nt/srht5i","slide":15,"text":""}
