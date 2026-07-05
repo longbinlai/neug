@@ -1,17 +1,22 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = "/Users/robeenly/Documents/neug";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, "..");
 const outFile = path.join(root, "outputs", "neug-llm-agent-graph-engine-slides.html");
 const pipInstallImagePath = path.join(root, "outputs", "assets", "neug-pip-install.png");
+const neugLogoPath = "/Users/longbinlai/.agents/skills/neug-wiki/raw/neug-logo/horizontal-logo-dark.png";
 
 const slides = [
   {
     kind: "cover",
     kicker: "NeuG",
-    title: "面向 LLM 与 Agent 的\n嵌入式图数据引擎",
-    subtitle: "支撑企业知识库、自动化分析与未来端侧关联索引",
-    footer: "高性能图查询  |  轻量嵌入  |  企业知识库  |  自动化分析  |  端侧关联索引",
+    title: "NeuG: 面向 Agent 应用的\n嵌入式图数据引擎",
+    subtitle: "支撑企业知识库、自动化分析与端侧关联索引",
+    presenter: "汇报者：赖龙彬（尤林）",
+    github: "GitHub: https://github.com/alibaba/neug",
+    footer: "高性能图查询  |  轻量嵌入  |  企业知识库  |  自动化分析  |  个人与设备记忆",
   },
   {
     kind: "context",
@@ -21,7 +26,7 @@ const slides = [
     cards: [
       ["组织知识", "LLM Wiki 说明了一个方向：组织知识不能只靠临时切片召回，需要把原始资料整理成可维护的知识层。企业里还要同时维护文档、代码、会议、项目和人员关系。", "green"],
       ["业务分析", "经营分析需要沿客户、商品、渠道、组织和时间连续追问。难点不是生成一次 SQL，而是维护可复用的分析上下文和中间结果。", "blue"],
-      ["个人与设备记忆", "千问眼镜等设备未来需要维护人、地点、事件、对话、任务和时间线的本地关联上下文。重点不是设备形态，而是端上持续积累的关系网络。", "amber"],
+      ["个人与设备记忆", "个人工具和设备需要维护人、地点、事件、资料、任务和时间线的本地关联上下文。重点不是设备形态，而是端上持续积累的关系网络。", "amber"],
     ],
     quote: "In the extreme view, the world can be seen as only connections, nothing else.",
     quoteBy: "Tim Berners-Lee，万维网之父",
@@ -46,7 +51,7 @@ const slides = [
   {
     kind: "benchmark",
     kicker: "FOUNDATION 1",
-    title: "NeuG 已把嵌入式形态做到单机顶级图查询性能",
+    title: "NeuG 已经单机形态下性能最强的图数据引擎",
     lead: "一组来自 Mac 单机对比 Neo4j，一组来自 LDBC-300 标准图压力测试。",
     mac: {
       title: "Mac 单机 LDBC SNB Interactive",
@@ -71,12 +76,12 @@ const slides = [
     kind: "embedded",
     kicker: "FOUNDATION 2",
     title: "21.5MB 的 pip 包，让图引擎可以进入应用和 Agent runtime",
-    lead: "NeuG 的轻量不是为了“小”，而是为了让图数据能力可以像一个库一样被嵌入到应用、工具链和未来端侧环境里。",
+    lead: "NeuG 的轻量不是为了“小”，而是为了让图数据能力可以像一个库一样被嵌入到应用、工具链、个人和端侧环境里。",
     image: "assets/neug-pip-install.png",
     cards: [
       ["低部署成本", "无需单独图数据库集群、服务进程和复杂运维，更接近 DuckDB / SQLite 的使用方式。", "green"],
       ["贴近 Agent 执行环境", "Agent 可以在本地工具链、CLI、Skill 和数据分析脚本里直接调用图查询与混合检索能力。", "blue"],
-      ["为端侧生态预留入口", "未来可面向千问眼镜、手机、可穿戴等设备做本地关联索引；这里点到为止，不抢当前主线。", "amber"],
+      ["为端侧生态预留入口", "轻量嵌入形态可面向手机、眼镜、可穿戴等设备，为个人与设备记忆保留端侧关联索引入口。", "amber"],
     ],
   },
   {
@@ -102,102 +107,164 @@ const slides = [
     ],
   },
   {
-    kicker: "LLM MEMORY",
-    title: "企业知识库需要图、向量和全文统一工作",
-    lead: "纯 RAG 容易把知识切碎；NeuG 更适合保留实体、关系、来源和上下文。",
-    cards: [
-      ["更准召回", "向量负责语义相似，全文负责精确匹配，图关系负责上下文扩展。", "green"],
-      ["更可追溯", "文档、代码、会议、人员、项目和决策都可以保留引用链路。", "blue"],
-      ["更能沉淀", "组织记忆不再只是 prompt 历史，而是可更新、可查询的数据资产。", "amber"],
+    kind: "knowledge-case",
+    kicker: "组织知识",
+    title: "组织知识｜先从研发知识库切入",
+    lead: "组织知识覆盖面广，研发知识库是最容易验证的切入点：代码、文档、模块、概念和版本天然有关系，最能体现 NeuG 维护上下文图的价值。",
+    caseLabel: "研发知识库案例",
+    question: "对比 MySQL / PostgreSQL / NeuG 在 MVCC、WAL、隔离级别和并发控制上的实现差异。",
+    graphNodes: [
+      ["Repo", "MySQL / PostgreSQL / NeuG", "green"],
+      ["Module", "Transaction / WAL / Optimizer", "blue"],
+      ["Concept", "MVCC / WAL / isolation", "amber"],
+      ["Wiki", "模块摘要与对比结论", "green"],
+      ["Raw", "源码、README、设计文档", "muted"],
+    ],
+    path: [
+      ["问题解析", "从问题里抽取 MVCC、WAL、隔离级别等 concept"],
+      ["图扩展", "MATCH concept → module → repo，补齐三个仓库的相关模块"],
+      ["混合检索", "向量找相近设计，全文锁定关键符号和术语"],
+      ["证据回溯", "答案从 wiki 摘要返回，必要时沿 source 回到 raw"],
+    ],
+    stats: [
+      ["3w vs 11w", "使用 wiki 后上下文显著变短", "green"],
+      ["≈6×", "token / credit 开销降低", "blue"],
+      ["4.33×", "回答时间从 13min 降到 3min", "amber"],
     ],
   },
   {
-    kicker: "GRAPH DATA SCIENCE",
-    title: "GDS 让知识库和 BI 从检索走向结构洞察",
-    placeholder: "预留：GDS 算法能力图谱或调用流程图",
-    lead: "图算法直接在数据库内运行，避免把数据搬到外部工具。",
-    bullets: [
-      "PageRank 用于重要节点排序",
-      "BFS / DFS 用于自动探索路径",
-      "Community detection 用于发现业务群组",
-      "SSSP / WCC 用于路径和连通性分析",
+    kind: "knowledge-update",
+    kicker: "组织知识",
+    title: "研发知识库｜增量维护避免知识腐化",
+    lead: "研发知识不是静态文档。代码、接口和设计持续变化，如果 wiki 不跟着更新，Agent 会引用过期概念，最后让知识库变得不可用。",
+    delta: [
+      ["代码变更", "新增模块、接口、函数调用"],
+      ["知识漂移", "wiki 摘要和 concept 开始落后"],
+      ["答案失真", "Agent 继续引用过期上下文"],
     ],
-    note: "业务意义：企业数据不只是被查到，而是能产生结构性解释。",
-  },
-  {
-    kicker: "DATA PIPELINE",
-    title: "NeuG 可以接入现有数据湖，而不是制造新的数据孤岛",
-    lead: "v0.1.2 以来的数据管道能力，让 NeuG 更像企业数据流里的图计算层。",
-    flow: [
-      ["OSS / S3", "远程 Parquet 直读"],
-      ["Schema-on-read", "自动推断列与类型"],
-      ["Graph Query", "图查询与图算法"],
-      ["Parquet Writeback", "结果写回数据湖"],
+    calls: [
+      "1. 解析 PR / release diff，得到变更实体和关系",
+      "2. 用 COPY TEMP 临时载入，不污染正式知识图",
+      "3. 在 NeuG 中分析影响范围：哪些模块、concept、wiki 页受影响",
+      "4. 生成 wiki 更新建议，并保留 source 回溯链路",
+      "5. PR 审查通过后，再写入正式知识库",
     ],
-  },
-  {
-    kicker: "BUSINESS APPLICATION",
-    title: "NeuGBI 把 BI 从“问数”推进到“自动分析”",
-    lead: "ChatBI 解决自然语言到查询；NeuGBI 解决如何沿业务关系持续下钻。",
-    cards: [
-      ["ChatBI", "面向报表和 SQL 生成。问题通常被转成一次查询，后续追问依赖人工继续建模。", "muted"],
-      ["NeuGBI", "基于图和超图重新建模。Agent 可以自动扩展维度、复用中间结果、沿关系分析原因。", "green"],
+    findings: [
+      ["先隔离", "变更先进入临时图，避免错误更新污染正式知识库", "green"],
+      ["再定位", "沿函数、模块、concept、wiki 页找出需要维护的范围", "blue"],
+      ["后入库", "人审查 diff 后再合并，知识更新变成可控流程", "amber"],
     ],
-    note: "核心变化：从生成图表，升级为生成分析路径。",
-  },
-  {
-    kicker: "NEUGBI ENGINE",
-    title: "NeuGBI 的差异化来自图探索、图分析和端到端采样",
-    cards: [
-      ["自动下钻", "沿业务图做 BFS / DFS 式探索，自动发现可解释的下一层维度。", "green"],
-      ["图分析指标", "把 PageRank、community detection 等结构指标引入 BI，而不只看聚合值。", "blue"],
-      ["端到端采样", "让大规模数据分析保持时效性，适合 agent 多轮探索。", "amber"],
-    ],
-    placeholder: "预留：问题 -> 自动下钻路径 -> 业务洞察流程图",
-  },
-  {
-    kicker: "BUSINESS CASE",
-    title: "NeuGBI 的业务表达应贴近经营分析场景",
-    lead: "建议使用“招聘与岗位变化分析”一类案例，保留多维下钻价值，避免学术研究案例抢走业务主线。",
-    placeholder: "预留：行业 -> 地区 -> 职级 -> 岗位 的自动分析路径",
-    bulletsTitle: "可展示的结果形态",
-    bullets: [
-      "Agent 自动拆解问题",
-      "沿业务关系扩展维度",
-      "给出趋势、原因和异常群组",
-      "支持回溯到数据来源",
+    stats: [
+      ["不维护", "知识会腐化，答案越来越不可信", "green"],
+      ["临时图", "先分析，不污染正式库", "blue"],
+      ["可审查", "wiki / concept diff 后再入库", "amber"],
     ],
   },
   {
-    kicker: "RESEARCH FRONTIER",
-    title: "SpecDB 是团队面向未来数据库形态的研究壁垒",
-    lead: "核心问题：能否让 LLM 直接生成满足特定工作负载需求的数据库系统？",
-    metrics: [
-      ["TPC-C", "最新生成版本吞吐超过 PostgreSQL", "green"],
-      ["TPC-H", "最新生成版本时延超过 DuckDB", "blue"],
+    kind: "business-case",
+    kicker: "业务分析",
+    title: "业务分析｜先从招聘与岗位变化切入",
+    lead: "业务分析覆盖面广，招聘与岗位变化适合作为第一类验证场景：岗位、职业、职级、地区和时间天然相连，NeuG 可以先把这些口径建成业务图。",
+    caseLabel: "NeuGBI 案例问题",
+    question: "AI 对美国就业的冲击有多大？",
+    modelNodes: [
+      ["Job", "岗位记录 / 招聘数量", "green"],
+      ["Occupation", "职业分类 / 软件开发", "blue"],
+      ["Seniority", "L1-L7 / Junior vs Senior", "amber"],
+      ["Region", "州 / 地区变化", "blue"],
+      ["Time", "2021-2025 趋势", "green"],
     ],
-    note: "这不是当前业务主线，但它会反哺 NeuG 的模块化、测试、优化器和自动生成能力。",
-    placeholder: "预留：SpecDB pipeline 图",
+    paths: [
+      ["问题拆解", "AI 冲击", "招聘数量", "岗位结构"],
+      ["对比口径", "Junior", "Senior", "L1-L7"],
+      ["证据落点", "职业分类", "软件开发", "地区 / 时间"],
+    ],
+    stats: [
+      ["60GB", "Revelio Lab 美国就业数据", "green"],
+      ["3 亿条", "记录规模超过 prompt 上下文", "blue"],
+      ["业务图", "岗位、职业、职级、地区、时间放在一张图里", "amber"],
+    ],
   },
   {
-    kicker: "FUTURE OPTION",
-    title: "端侧关联索引是未来生态延展，不是当前汇报主轴",
-    lead: "NeuG 的高性能和轻量体积，为千问眼镜、手机、可穿戴、车载和机器人预留了本地数据引擎入口。",
-    cards: [
-      ["本地记忆", "人物、地点、事件、对话和任务在端上形成长期关联。", "green"],
-      ["低延迟与隐私", "常用上下文不必每次上云，关键个人数据可以本地检索。", "blue"],
-      ["生态入口", "千问眼镜等设备需要的不只是模型，也需要可持续积累的关联索引。", "amber"],
+    kind: "business-search",
+    kicker: "业务分析",
+    title: "业务分析｜多轮下钻天然适合图搜索",
+    lead: "每一轮分析都会从当前发现出发，扩展候选维度、保留路径状态、剪掉无效分支；这和图中的 BFS / DFS 分析负载很像，所以适合用图数据库承载。",
+    root: "AI 对就业影响？",
+    levels: [
+      ["扩展层 1", "整体趋势", "职业", "地区"],
+      ["扩展层 2", "计算机职业", "Junior / Senior", "主要州"],
+      ["扩展层 3", "软件开发", "L1 / L2 / L3+", "结论回写"],
+    ],
+    graphFit: [
+      ["前沿扩展", "当前候选维度就是下一轮要扩展的前沿节点", "green"],
+      ["路径状态", "每轮发现和中间分组需要沿分析路径保留下来", "blue"],
+      ["分支剪枝", "先用采样判断方向，剪掉低价值分支", "amber"],
+    ],
+    stats: [
+      ["-29.4%", "Junior 岗位记录数下降", "green"],
+      ["-5.8%", "Senior 岗位记录数下降", "blue"],
+      ["280万→145万", "软件开发 L2 接近腰斩", "amber"],
     ],
   },
   {
+    kind: "future-entry",
+    kicker: "个人与设备记忆",
+    title: "个人与设备记忆｜从小场景验证端侧关联索引",
+    lead: "这个方向还在探索阶段，先从个人高频、数据边界清楚的小场景验证 NeuG 对事件、资料和任务关系的管理价值。",
+    boundary: {
+      label: "验证方式",
+      title: "先选数据边界清楚的小场景",
+      body: "下面三个入口都有明确的数据来源和可回答的问题，后续可以选择一个做演示验证，判断本地关系索引是否真的能提升 Agent 记忆能力。",
+    },
+    entries: [
+      [
+        "会后任务记忆",
+        "把会议纪要、IM、日历和 PR 关联到人、项目、截止时间。",
+        "可回答：上次周会提到的 blocker，后来是谁在跟？",
+        "green",
+      ],
+      [
+        "个人资料回溯",
+        "本地文档、代码片段、浏览记录只抽取摘要、来源和任务关系。",
+        "可回答：这个设计决策当时参考了哪几份材料？",
+        "blue",
+      ],
+      [
+        "设备事件索引",
+        "手机或眼镜只记录轻量事件：见了谁、在哪、关联哪件事。",
+        "可回答：上周在客户现场提到的需求是什么？",
+        "amber",
+      ],
+    ],
+    signals: [
+      ["轻量嵌入", "先在桌面 Agent 或个人工具链里验证，不依赖新硬件。", "green"],
+      ["本地优先", "个人高频数据可以留在本机，只把必要摘要交给模型。", "blue"],
+      ["关系清楚", "人、事、时间、资料天然是图，比 prompt 历史更可维护。", "amber"],
+    ],
+  },
+  {
+    kind: "roadmap",
     kicker: "ROADMAP",
-    title: "下一步要把底座能力收敛成可展示的业务闭环",
-    cards: [
-      ["近期", "完成 vector extension 和 full-text，形成企业知识库与组织记忆 demo。", "green"],
-      ["中期", "GDS 与 NeuGBI 深度集成，打磨企业经营分析 demo。", "blue"],
-      ["长期", "推进 SpecDB 研究，探索千问眼镜等端侧关联索引场景。", "amber"],
+    title: "下一步先打磨两个可展示闭环，保留个人记忆探索入口",
+    lead: "汇报结论：NeuG 不是单点图数据库，而是面向 LLM / Agent 的嵌入式图数据底座。",
+    lanes: [
+      ["组织知识闭环", "Vector + full-text + GDS + CLI，做企业知识库 / 代码知识库演示验证。", "green"],
+      ["业务分析闭环", "数据湖接入 + 采样 + NeuGBI，把招聘/经营分析跑成端到端演示验证。", "blue"],
+      ["个人记忆探索", "围绕会后任务、资料回溯或设备事件选择小场景，验证端侧关联索引价值。", "amber"],
     ],
-    note: "汇报结论：NeuG 是一套能同时承载高性能图查询、LLM 数据中间层和未来端侧关联索引的嵌入式图数据引擎。",
+  },
+  {
+    kind: "qa",
+    kicker: "Q&A",
+    title: "Q&A",
+    lead: "欢迎讨论 NeuG 的定位、下一步验证闭环和 Agent 应用接入方式。",
+    questions: [
+      ["场景优先级", "组织知识和 NeuGBI 两个闭环，哪个更适合作为第一阶段演示？"],
+      ["技术验证", "混合检索、图分析、采样和 CLI，哪些能力需要优先打磨成稳定接口？"],
+      ["应用接入", "NeuG 作为嵌入式图引擎，应该先进入哪些 Agent runtime 或工具链？"],
+    ],
+    github: "https://github.com/alibaba/neug",
   },
 ];
 
@@ -233,6 +300,43 @@ function renderMetrics(metrics) {
           <strong>${esc(value)}</strong>
           <span>${esc(label)}</span>
         </div>`,
+    )
+    .join("")}</div>`;
+}
+
+function renderScenarioSteps(steps) {
+  return `<div class="scenario-steps">${steps
+    .map(
+      ([title, body], i) => `
+        <div class="scenario-step">
+          <span>${String(i + 1).padStart(2, "0")}</span>
+          <h3>${esc(title)}</h3>
+          <p>${esc(body)}</p>
+        </div>`,
+    )
+    .join('<div class="scenario-step-line"></div>')}</div>`;
+}
+
+function renderStatTiles(stats) {
+  return `<div class="stat-tiles">${stats
+    .map(
+      ([value, label, accent]) => `
+        <div class="stat-tile${cls(accent)}">
+          <strong>${esc(value)}</strong>
+          <span>${esc(label)}</span>
+        </div>`,
+    )
+    .join("")}</div>`;
+}
+
+function renderCompactCards(cards) {
+  return `<div class="compact-cards">${cards
+    .map(
+      ([title, body, accent]) => `
+        <article class="compact-card${cls(accent)}">
+          <h3>${esc(title)}</h3>
+          <p>${esc(body)}</p>
+        </article>`,
     )
     .join("")}</div>`;
 }
@@ -292,6 +396,7 @@ function renderPlaceholder(label, className = "") {
 }
 
 let pipInstallImageDataUri = "";
+let neugLogoDataUri = "";
 
 function assetSrc(src) {
   if (src === "assets/neug-pip-install.png" && pipInstallImageDataUri) {
@@ -311,9 +416,12 @@ function renderSlide(slide, index) {
       <section class="slide cover" data-page="${page}">
         <div class="orb orb-a"></div>
         <div class="orb orb-b"></div>
+        ${neugLogoDataUri ? `<img class="cover-logo" src="${neugLogoDataUri}" alt="NeuG" />` : ""}
         <div class="kicker">${esc(slide.kicker)}</div>
         <h1>${esc(slide.title).replaceAll("\n", "<br>")}</h1>
         <p class="subtitle">${esc(slide.subtitle)}</p>
+        <p class="cover-presenter">${esc(slide.presenter)}</p>
+        <p class="cover-github">${esc(slide.github)}</p>
         <div class="rule"></div>
         <p class="cover-footer">${esc(slide.footer)}</p>
       </section>`;
@@ -540,6 +648,354 @@ function renderSlide(slide, index) {
         ${renderFooter(page)}
       </section>`;
   }
+  if (slide.kind === "knowledge-case") {
+    return `
+      <section class="slide knowledge-case-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="knowledge-layout">
+          <div class="case-left">
+            <div class="case-question">
+              <span>${esc(slide.caseLabel ?? "具体问题")}</span>
+              <strong>${esc(slide.question)}</strong>
+            </div>
+            <div class="case-path">
+              ${slide.path
+                .map(
+                  ([title, body], i) => `
+                    <div class="case-path-step">
+                      <em>${String(i + 1).padStart(2, "0")}</em>
+                      <h3>${esc(title)}</h3>
+                      <p>${esc(body)}</p>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="case-right">
+            <div class="schema-title">NeuG 中的知识图建模</div>
+            <div class="knowledge-schema">
+              ${slide.graphNodes
+                .map(
+                  ([title, body, accent]) => `
+                    <div class="schema-node${cls(accent)}">
+                      <strong>${esc(title)}</strong>
+                      <span>${esc(body)}</span>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "knowledge-update") {
+    return `
+      <section class="slide knowledge-update-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="update-layout">
+          <div class="update-left">
+            <div class="delta-stack">
+              ${slide.delta
+                .map(
+                  ([title, body], i) => `
+                    <div class="delta-item">
+                      <span>${String(i + 1).padStart(2, "0")}</span>
+                      <strong>${esc(title)}</strong>
+                      <p>${esc(body)}</p>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+            <div class="call-sequence">
+              <span>NeuG 调用路径</span>
+              ${slide.calls.map((call) => `<code>${esc(call)}</code>`).join("")}
+            </div>
+          </div>
+          <div class="update-right">
+            <div class="finding-list">
+              ${slide.findings
+                .map(
+                  ([title, body, accent]) => `
+                    <article class="finding${cls(accent)}">
+                      <h3>${esc(title)}</h3>
+                      <p>${esc(body)}</p>
+                    </article>`,
+                )
+                .join("")}
+            </div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "future-entry") {
+    return `
+      <section class="slide future-entry-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="future-layout">
+          <div class="future-boundary">
+            <span>${esc(slide.boundary.label)}</span>
+            <strong>${esc(slide.boundary.title)}</strong>
+            <p>${esc(slide.boundary.body)}</p>
+            <div class="future-signals">
+              ${slide.signals
+                .map(
+                  ([title, body, accent]) => `
+                    <article class="future-signal${cls(accent)}">
+                      <h3>${esc(title)}</h3>
+                      <p>${esc(body)}</p>
+                    </article>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="future-entry-list">
+            ${slide.entries
+              .map(
+                ([title, body, example, accent]) => `
+                  <article class="future-entry${cls(accent)}">
+                    <h3>${esc(title)}</h3>
+                    <p>${esc(body)}</p>
+                    <em>${esc(example)}</em>
+                  </article>`,
+              )
+              .join("")}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "scenario") {
+    return `
+      <section class="slide scenario-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="scenario-layout">
+          <div class="scenario-flow-panel">
+            ${renderScenarioSteps(slide.steps)}
+          </div>
+          <div class="scenario-evidence-panel">
+            <div class="evidence-label">关键证据 / 落地条件</div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "business-case") {
+    return `
+      <section class="slide business-case-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="business-layout">
+          <div class="business-left">
+            <div class="case-question">
+              <span>${esc(slide.caseLabel)}</span>
+              <strong>${esc(slide.question)}</strong>
+            </div>
+            <div class="business-paths">
+              ${slide.paths
+                .map(
+                  ([label, ...items], pathIndex) => `
+                    <div class="business-path ${pathIndex === 0 ? "green" : "blue"}">
+                      <span>${esc(label)}</span>
+                      <div class="path-chain">
+                        ${items
+                          .map((item, itemIndex) => `<strong>${esc(item)}</strong>${itemIndex < items.length - 1 ? "<em>→</em>" : ""}`)
+                          .join("")}
+                      </div>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="business-right">
+            <div class="schema-title">NeuG 中的业务图建模</div>
+            <div class="business-model">
+              ${slide.modelNodes
+                .map(
+                  ([title, body, accent]) => `
+                    <div class="schema-node${cls(accent)}">
+                      <strong>${esc(title)}</strong>
+                      <span>${esc(body)}</span>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "business-search") {
+    return `
+      <section class="slide business-search-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="search-layout">
+          <div class="search-map">
+            <div class="search-root">${esc(slide.root)}</div>
+            <div class="frontier-list">
+              ${slide.levels
+                .map(
+                  ([label, ...nodes], i) => `
+                    <div class="frontier-row frontier-${i}">
+                      <span>${esc(label)}</span>
+                      <div class="frontier-nodes">
+                        ${nodes.map((node) => `<strong>${esc(node)}</strong>`).join("")}
+                      </div>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="search-proof">
+            <div class="fit-list">
+              ${slide.graphFit
+                .map(
+                  ([title, body, accent]) => `
+                    <article class="fit-item${cls(accent)}">
+                      <h3>${esc(title)}</h3>
+                      <p>${esc(body)}</p>
+                    </article>`,
+                )
+                .join("")}
+            </div>
+            <div class="search-stats">
+              ${renderStatTiles(slide.stats)}
+            </div>
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "business-loop") {
+    return `
+      <section class="slide business-loop-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="business-loop-layout">
+          <div class="loop-left">
+            <div class="risk-list">
+              ${slide.risks
+                .map(
+                  ([title, body], i) => `
+                    <div class="risk-item">
+                      <span>${String(i + 1).padStart(2, "0")}</span>
+                      <strong>${esc(title)}</strong>
+                      <p>${esc(body)}</p>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+            <div class="call-sequence business-steps">
+              <span>NeuG 分析闭环</span>
+              ${slide.steps.map(([title, body]) => `<code><b>${esc(title)}</b> · ${esc(body)}</code>`).join("")}
+            </div>
+          </div>
+          <div class="loop-right">
+            <div class="evidence-label">案例结论</div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "analysis") {
+    return `
+      <section class="slide analysis-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="analysis-layout">
+          <div class="analysis-tree">
+            <div class="analysis-question">${esc(slide.center)}</div>
+            <div class="analysis-paths">
+              ${slide.paths
+                .map(
+                  ([label, ...items], pathIndex) => `
+                    <div class="analysis-path ${pathIndex === 0 ? "green" : "blue"}">
+                      <span>${esc(label)}</span>
+                      <div class="path-chain">
+                        ${items
+                          .map((item, itemIndex) => `<strong>${esc(item)}</strong>${itemIndex < items.length - 1 ? "<em>→</em>" : ""}`)
+                          .join("")}
+                      </div>
+                    </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="analysis-proof">
+            <div class="evidence-label">案例证据</div>
+            ${renderStatTiles(slide.stats)}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "roadmap") {
+    return `
+      <section class="slide roadmap-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <h2>${esc(slide.title)}</h2>
+        <p class="scenario-lead">${esc(slide.lead)}</p>
+        <div class="roadmap-lanes">
+          ${slide.lanes
+            .map(
+              ([title, body, accent], i) => `
+                <article class="roadmap-lane${cls(accent)}">
+                  <span>${String(i + 1).padStart(2, "0")}</span>
+                  <h3>${esc(title)}</h3>
+                  <p>${esc(body)}</p>
+                </article>`,
+            )
+            .join("")}
+        </div>
+        ${slide.takeaway ? `<p class="roadmap-takeaway">${esc(slide.takeaway)}</p>` : ""}
+        ${renderFooter(page)}
+      </section>`;
+  }
+  if (slide.kind === "qa") {
+    return `
+      <section class="slide qa-slide" data-page="${page}">
+        <div class="kicker">${esc(slide.kicker)}</div>
+        <div class="qa-layout">
+          <div class="qa-main">
+            <h2>${esc(slide.title)}</h2>
+            <p class="scenario-lead">${esc(slide.lead)}</p>
+            <p class="qa-github">${esc(slide.github)}</p>
+          </div>
+          <div class="qa-questions">
+            ${slide.questions
+              .map(
+                ([title, body], i) => `
+                  <article class="qa-question">
+                    <span>${String(i + 1).padStart(2, "0")}</span>
+                    <h3>${esc(title)}</h3>
+                    <p>${esc(body)}</p>
+                  </article>`,
+              )
+              .join("")}
+          </div>
+        </div>
+        ${renderFooter(page)}
+      </section>`;
+  }
 
   let body = "";
   if (slide.metrics) body += renderMetrics(slide.metrics);
@@ -588,6 +1044,7 @@ function renderSlide(slide, index) {
 }
 
 pipInstallImageDataUri = `data:image/png;base64,${await fs.readFile(pipInstallImagePath, "base64")}`;
+neugLogoDataUri = `data:image/png;base64,${await fs.readFile(neugLogoPath, "base64")}`;
 
 const html = `<!doctype html>
 <html lang="zh-CN">
@@ -598,6 +1055,9 @@ const html = `<!doctype html>
   <style>
     :root {
       color-scheme: dark;
+      --deck-scale: 1;
+      --deck-width: 1440px;
+      --deck-height: 900px;
       --bg: #0b0d0e;
       --panel: #171b1f;
       --panel-2: #20262b;
@@ -632,9 +1092,10 @@ const html = `<!doctype html>
       position: fixed;
       left: 50%;
       top: 50%;
-      width: min(100vw, calc(100vh * 16 / 9));
-      height: min(100vh, calc(100vw * 9 / 16));
-      transform: translate(-50%, -50%);
+      width: var(--deck-width);
+      height: var(--deck-height);
+      transform: translate(-50%, -50%) scale(var(--deck-scale));
+      transform-origin: center center;
       background: var(--bg);
       box-shadow: 0 28px 80px rgba(0,0,0,.56);
       overflow: hidden;
@@ -679,8 +1140,22 @@ const html = `<!doctype html>
       font-size: 23px;
       color: var(--muted);
     }
+    .cover-presenter {
+      margin-top: 18px;
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.3;
+      font-weight: 620;
+    }
+    .cover-github {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
     .rule {
-      margin-top: 42px;
+      margin-top: 28px;
       width: 180px;
       height: 2px;
       background: var(--green);
@@ -690,13 +1165,23 @@ const html = `<!doctype html>
       font-size: 17px;
       color: var(--muted);
     }
+    .cover-logo {
+      position: absolute;
+      right: 72px;
+      top: 58px;
+      width: 164px;
+      height: auto;
+      object-fit: contain;
+      opacity: .98;
+      z-index: 2;
+    }
     .orb {
       position: absolute;
       border-radius: 999px;
       filter: saturate(1.05);
     }
-    .orb-a { right: 170px; top: 70px; width: 180px; height: 180px; background: var(--green); opacity: .92; }
-    .orb-b { right: 110px; top: 205px; width: 128px; height: 128px; background: var(--blue); opacity: .9; }
+    .orb-a { right: 170px; top: 150px; width: 168px; height: 168px; background: var(--green); opacity: .92; }
+    .orb-b { right: 112px; top: 282px; width: 116px; height: 116px; background: var(--blue); opacity: .9; }
     .content { margin-top: 34px; }
     .lead {
       max-width: 940px;
@@ -824,26 +1309,26 @@ const html = `<!doctype html>
       line-height: 1.35;
     }
     .hybrid-lead {
-      margin-top: 24px;
+      margin-top: 20px;
       max-width: 960px;
       color: var(--muted);
-      font-size: 23px;
-      line-height: 1.45;
+      font-size: 21px;
+      line-height: 1.34;
     }
     .hybrid-layout {
       display: grid;
       grid-template-columns: 390px 180px 1fr;
-      gap: 34px;
+      gap: 28px;
       align-items: center;
-      margin-top: 52px;
+      margin-top: 38px;
     }
     .hybrid-actions {
       display: grid;
-      gap: 18px;
+      gap: 14px;
     }
     .action-card {
-      min-height: 118px;
-      padding: 20px 22px;
+      min-height: 106px;
+      padding: 17px 20px;
       border-radius: 12px;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -854,14 +1339,14 @@ const html = `<!doctype html>
     .action-card.amber { border-left-color: var(--amber); }
     .action-card h3 {
       color: var(--text);
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1.2;
-      margin-bottom: 12px;
+      margin-bottom: 9px;
     }
     .action-card p {
       color: var(--muted);
-      font-size: 16.4px;
-      line-height: 1.45;
+      font-size: 15.2px;
+      line-height: 1.34;
     }
     .hybrid-arrow {
       display: grid;
@@ -888,8 +1373,8 @@ const html = `<!doctype html>
     .engine-stack {
       position: relative;
       display: grid;
-      gap: 13px;
-      padding: 54px 24px 22px;
+      gap: 10px;
+      padding: 48px 22px 18px;
       border-radius: 18px;
       border: 2px solid rgba(155,231,197,.72);
       background:
@@ -918,48 +1403,48 @@ const html = `<!doctype html>
       text-transform: uppercase;
     }
     .stack-layer {
-      padding: 20px 24px;
+      padding: 16px 21px;
       border-radius: 12px;
       border: 1px solid rgba(48,56,61,.92);
       background: rgba(11,13,14,.62);
     }
     .stack-layer h3 {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: var(--text);
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1.15;
     }
     .stack-layer p {
       color: var(--muted);
-      font-size: 16.2px;
-      line-height: 1.35;
+      font-size: 15px;
+      line-height: 1.28;
     }
     .stack-layer.layer-0 { border-color: rgba(155,231,197,.6); }
     .stack-layer.layer-1 { border-color: rgba(118,214,255,.52); }
     .stack-layer.layer-2 { border-color: rgba(232,199,126,.48); }
     .stack-layer.layer-3 { border-color: rgba(155,231,197,.44); }
     .benchmark-lead {
-      margin-top: 24px;
+      margin-top: 20px;
       max-width: 980px;
       color: var(--muted);
-      font-size: 23px;
-      line-height: 1.45;
+      font-size: 21px;
+      line-height: 1.34;
     }
     .benchmark-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 34px;
+      gap: 30px;
       align-items: stretch;
-      margin-top: 36px;
+      margin-top: 28px;
     }
     .benchmark-panel {
-      min-height: 354px;
+      min-height: 326px;
       border-radius: 18px;
       border: 1px solid var(--line);
       background:
         radial-gradient(circle at 85% 8%, rgba(118,214,255,.1), transparent 26%),
         var(--panel);
-      padding: 26px 30px;
+      padding: 22px 28px;
     }
     .benchmark-panel.ldbc-panel {
       background:
@@ -968,19 +1453,19 @@ const html = `<!doctype html>
     }
     .panel-head h3 {
       color: var(--text);
-      font-size: 25px;
+      font-size: 23px;
       line-height: 1.2;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .panel-head p {
       color: var(--muted);
-      font-size: 15.5px;
+      font-size: 14.5px;
       line-height: 1.35;
     }
     .qps-bars {
       display: grid;
-      gap: 22px;
-      margin-top: 32px;
+      gap: 18px;
+      margin-top: 25px;
     }
     .bar-row {
       display: grid;
@@ -1013,13 +1498,13 @@ const html = `<!doctype html>
       display: flex;
       align-items: baseline;
       gap: 16px;
-      margin-top: 34px;
-      padding-top: 22px;
+      margin-top: 26px;
+      padding-top: 18px;
       border-top: 1px solid var(--line);
     }
     .benchmark-callout strong {
       color: var(--green);
-      font-size: 56px;
+      font-size: 50px;
       line-height: 1;
       letter-spacing: -0.02em;
     }
@@ -1032,7 +1517,7 @@ const html = `<!doctype html>
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-top: 18px;
+      margin-top: 14px;
     }
     .benchmark-facts.three {
       grid-template-columns: repeat(3, 1fr);
@@ -1040,11 +1525,11 @@ const html = `<!doctype html>
     }
     .benchmark-facts span {
       display: block;
-      padding: 10px 14px;
+      padding: 8px 12px;
       border-radius: 9px;
       border: 1px solid rgba(48,56,61,.9);
       color: var(--muted);
-      font-size: 14.5px;
+      font-size: 13.5px;
       background: rgba(11,13,14,.45);
     }
     .benchmark-facts.three span {
@@ -1058,10 +1543,10 @@ const html = `<!doctype html>
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
-      margin-top: 28px;
+      margin-top: 22px;
     }
     .duel {
-      padding: 22px 20px 20px;
+      padding: 18px 18px 16px;
       border-radius: 14px;
       border: 1px solid var(--line);
       background: rgba(11,13,14,.5);
@@ -1069,14 +1554,14 @@ const html = `<!doctype html>
     .duel span {
       display: block;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     .duel strong {
       display: block;
       color: var(--green);
-      font-size: 39px;
+      font-size: 36px;
       line-height: 1;
       letter-spacing: -0.02em;
     }
@@ -1092,8 +1577,8 @@ const html = `<!doctype html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 18px;
-      padding: 18px 22px;
+      margin-top: 14px;
+      padding: 14px 20px;
       border-radius: 13px;
       background: rgba(155,231,197,.1);
       border: 1px solid rgba(155,231,197,.36);
@@ -1105,7 +1590,7 @@ const html = `<!doctype html>
     }
     .lift-strip strong {
       color: var(--green);
-      font-size: 38px;
+      font-size: 34px;
       line-height: 1;
     }
     .embedded-lead {
@@ -1631,6 +2116,104 @@ const html = `<!doctype html>
       font-size: 12.4px;
       line-height: 1.2;
     }
+    .core-slide .core-lead {
+      margin-top: 18px;
+      font-size: 21px;
+      line-height: 1.36;
+    }
+    .core-slide .core-system {
+      margin-top: 26px;
+      grid-template-columns: 318px 66px 326px 66px 1fr;
+      min-height: 292px;
+      padding: 18px 24px;
+      border-radius: 16px;
+    }
+    .core-slide .core-column {
+      gap: 11px;
+    }
+    .core-slide .column-label {
+      font-size: 11px;
+    }
+    .core-slide .system-module {
+      min-height: 92px;
+      padding: 15px 18px;
+      border-radius: 10px;
+    }
+    .core-slide .system-module h3 {
+      font-size: 20px;
+    }
+    .core-slide .system-module p {
+      margin-top: 7px;
+      font-size: 13.4px;
+      line-height: 1.3;
+    }
+    .core-slide .system-module code {
+      margin-top: 9px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .core-slide .system-arrow {
+      gap: 9px;
+      font-size: 10px;
+    }
+    .core-slide .system-arrow strong {
+      width: 38px;
+      height: 38px;
+      font-size: 21px;
+    }
+    .core-slide .graph-core-panel {
+      gap: 14px;
+    }
+    .core-slide .core-ring {
+      width: 248px;
+    }
+    .core-slide .core-ring span {
+      width: 196px;
+      font-size: 26px;
+    }
+    .core-slide .core-ring p {
+      margin-top: 10px;
+      width: 202px;
+      font-size: 13.1px;
+      line-height: 1.3;
+    }
+    .core-slide .cli-panel {
+      padding: 16px 18px;
+      border-radius: 10px;
+    }
+    .core-slide .cli-panel span {
+      font-size: 22px;
+    }
+    .core-slide .cli-panel p {
+      margin-top: 8px;
+      font-size: 13.6px;
+      line-height: 1.32;
+    }
+    .core-slide .query-strip {
+      gap: 7px;
+    }
+    .core-slide .query-strip span {
+      padding: 7px 9px;
+      font-size: 11.8px;
+    }
+    .core-slide .scenario-bridge {
+      grid-template-columns: 172px repeat(3, 1fr);
+      gap: 11px;
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-radius: 13px;
+    }
+    .core-slide .bridge-label {
+      font-size: 13.6px;
+    }
+    .core-slide .scenario-chip {
+      min-height: 44px;
+      padding: 9px 14px;
+      border-radius: 10px;
+    }
+    .core-slide .scenario-chip strong {
+      font-size: 15.5px;
+    }
     .query-entry strong {
       flex: 0 0 auto;
       color: var(--text);
@@ -1822,12 +2405,1227 @@ const html = `<!doctype html>
       height: 1px;
       background: var(--line);
     }
+    .knowledge-layout,
+    .update-layout {
+      display: grid;
+      grid-template-columns: 560px 1fr;
+      gap: 40px;
+      align-items: stretch;
+      margin-top: 30px;
+    }
+    .case-left,
+    .case-right,
+    .update-left,
+    .update-right {
+      min-width: 0;
+    }
+    .case-question {
+      padding: 22px 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(155,231,197,.5);
+      background:
+        radial-gradient(circle at 84% 10%, rgba(155,231,197,.12), transparent 28%),
+        rgba(17,20,23,.92);
+    }
+    .case-question span,
+    .schema-title,
+    .call-sequence span {
+      display: block;
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .case-question strong {
+      display: block;
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1.34;
+      font-weight: 760;
+    }
+    .case-path {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .case-path-step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      column-gap: 14px;
+      min-height: 72px;
+      padding: 15px 18px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.82);
+    }
+    .case-path-step em {
+      grid-row: 1 / span 2;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.5);
+      color: var(--green);
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .case-path-step h3 {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+    .case-path-step p {
+      color: var(--muted);
+      font-size: 14.6px;
+      line-height: 1.35;
+    }
+    .case-right,
+    .update-right {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 16px;
+    }
+    .knowledge-schema {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.76);
+    }
+    .schema-node {
+      min-height: 82px;
+      padding: 16px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(11,13,14,.56);
+    }
+    .schema-node.green { border-color: rgba(155,231,197,.48); }
+    .schema-node.blue { border-color: rgba(118,214,255,.48); }
+    .schema-node.amber { border-color: rgba(232,199,126,.48); }
+    .schema-node strong {
+      display: block;
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.18;
+      margin-bottom: 8px;
+    }
+    .schema-node span {
+      display: block;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.3;
+    }
+    .schema-node:nth-child(5) {
+      grid-column: 1 / -1;
+    }
+    .delta-stack {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .delta-item {
+      min-height: 128px;
+      padding: 18px 16px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.86);
+    }
+    .delta-item span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.48);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-bottom: 18px;
+    }
+    .delta-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.18;
+      margin-bottom: 9px;
+    }
+    .delta-item p {
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.3;
+    }
+    .call-sequence {
+      margin-top: 16px;
+      padding: 20px 22px;
+      border-radius: 16px;
+      border: 1px solid rgba(118,214,255,.38);
+      background: rgba(15,27,33,.68);
+    }
+    .call-sequence code {
+      display: block;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: rgba(11,13,14,.64);
+      color: var(--blue);
+      font-size: 13px;
+      line-height: 1.25;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-top: 8px;
+      white-space: nowrap;
+    }
+    .finding-list {
+      display: grid;
+      gap: 12px;
+    }
+    .finding {
+      min-height: 98px;
+      padding: 18px 20px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(17,20,23,.86);
+    }
+    .finding.green { border-left-color: var(--green); }
+    .finding.blue { border-left-color: var(--blue); }
+    .finding.amber { border-left-color: var(--amber); }
+    .finding h3 {
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.18;
+      margin-bottom: 8px;
+    }
+    .finding p {
+      color: var(--muted);
+      font-size: 14.3px;
+      line-height: 1.34;
+    }
+    .knowledge-case-slide .stat-tiles,
+    .knowledge-update-slide .stat-tiles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: none;
+      gap: 12px;
+    }
+    .knowledge-case-slide .stat-tile,
+    .knowledge-update-slide .stat-tile {
+      min-height: 108px;
+      padding: 17px 15px;
+    }
+    .knowledge-case-slide .stat-tile strong,
+    .knowledge-update-slide .stat-tile strong {
+      font-size: 28px;
+    }
+    .knowledge-case-slide .stat-tile span,
+    .knowledge-update-slide .stat-tile span {
+      font-size: 13.2px;
+    }
+    .knowledge-case-slide .scenario-lead {
+      margin-top: 16px;
+      max-width: 960px;
+      font-size: 20px;
+      line-height: 1.32;
+    }
+    .knowledge-case-slide .knowledge-layout {
+      grid-template-columns: 548px 1fr;
+      gap: 36px;
+      margin-top: 24px;
+    }
+    .knowledge-case-slide .case-question {
+      padding: 17px 20px;
+      border-radius: 14px;
+    }
+    .knowledge-case-slide .case-question span {
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+    .knowledge-case-slide .case-question strong {
+      font-size: 20px;
+      line-height: 1.24;
+    }
+    .knowledge-case-slide .case-path {
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .knowledge-case-slide .case-path-step {
+      grid-template-columns: 38px 1fr;
+      column-gap: 12px;
+      min-height: 62px;
+      padding: 12px 15px;
+      border-radius: 11px;
+    }
+    .knowledge-case-slide .case-path-step em {
+      width: 30px;
+      height: 30px;
+      font-size: 11px;
+    }
+    .knowledge-case-slide .case-path-step h3 {
+      font-size: 16.8px;
+      margin-bottom: 4px;
+    }
+    .knowledge-case-slide .case-path-step p {
+      font-size: 13.5px;
+      line-height: 1.28;
+    }
+    .knowledge-case-slide .case-right {
+      gap: 12px;
+    }
+    .knowledge-case-slide .schema-title {
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+    .knowledge-case-slide .knowledge-schema {
+      gap: 10px;
+      padding: 14px;
+      border-radius: 14px;
+    }
+    .knowledge-case-slide .schema-node {
+      min-height: 70px;
+      padding: 13px 14px;
+      border-radius: 10px;
+    }
+    .knowledge-case-slide .schema-node strong {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .knowledge-case-slide .schema-node span {
+      font-size: 12.8px;
+      line-height: 1.24;
+    }
+    .knowledge-case-slide .stat-tiles {
+      gap: 10px;
+    }
+    .knowledge-case-slide .stat-tile {
+      min-height: 88px;
+      padding: 13px 13px;
+      border-radius: 11px;
+    }
+    .knowledge-case-slide .stat-tile strong {
+      font-size: 25px;
+    }
+    .knowledge-case-slide .stat-tile span {
+      margin-top: 8px;
+      font-size: 12.6px;
+      line-height: 1.22;
+    }
+    .knowledge-update-slide .scenario-lead {
+      margin-top: 16px;
+      max-width: 980px;
+      font-size: 20px;
+      line-height: 1.32;
+    }
+    .knowledge-update-slide .update-layout {
+      grid-template-columns: 560px 1fr;
+      gap: 36px;
+      margin-top: 24px;
+    }
+    .knowledge-update-slide .delta-stack {
+      gap: 10px;
+    }
+    .knowledge-update-slide .delta-item {
+      min-height: 102px;
+      padding: 14px 14px;
+      border-radius: 11px;
+    }
+    .knowledge-update-slide .delta-item span {
+      width: 28px;
+      height: 28px;
+      margin-bottom: 12px;
+      font-size: 10.5px;
+    }
+    .knowledge-update-slide .delta-item strong {
+      font-size: 16.5px;
+      margin-bottom: 7px;
+    }
+    .knowledge-update-slide .delta-item p {
+      font-size: 12.6px;
+      line-height: 1.24;
+    }
+    .knowledge-update-slide .call-sequence {
+      margin-top: 12px;
+      padding: 16px 18px;
+      border-radius: 13px;
+    }
+    .knowledge-update-slide .call-sequence span {
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+    .knowledge-update-slide .call-sequence code {
+      padding: 8px 10px;
+      margin-top: 7px;
+      font-size: 12.3px;
+      line-height: 1.18;
+      white-space: normal;
+    }
+    .knowledge-update-slide .update-right {
+      gap: 12px;
+    }
+    .knowledge-update-slide .finding-list {
+      gap: 10px;
+    }
+    .knowledge-update-slide .finding {
+      min-height: 82px;
+      padding: 14px 16px;
+      border-radius: 11px;
+    }
+    .knowledge-update-slide .finding h3 {
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+    .knowledge-update-slide .finding p {
+      font-size: 13px;
+      line-height: 1.28;
+    }
+    .knowledge-update-slide .stat-tiles {
+      gap: 10px;
+    }
+    .knowledge-update-slide .stat-tile {
+      min-height: 86px;
+      padding: 12px 13px;
+      border-radius: 11px;
+    }
+    .knowledge-update-slide .stat-tile strong {
+      font-size: 24px;
+    }
+    .knowledge-update-slide .stat-tile span {
+      margin-top: 7px;
+      font-size: 12.4px;
+      line-height: 1.2;
+    }
+    .business-layout,
+    .business-loop-layout {
+      display: grid;
+      grid-template-columns: 560px 1fr;
+      gap: 36px;
+      align-items: stretch;
+      margin-top: 24px;
+    }
+    .business-case-slide .scenario-lead,
+    .business-loop-slide .scenario-lead {
+      margin-top: 16px;
+      max-width: 1000px;
+      font-size: 20px;
+      line-height: 1.32;
+    }
+    .business-case-slide .scenario-lead {
+      margin-top: 12px;
+      font-size: 19px;
+      line-height: 1.28;
+    }
+    .business-case-slide .business-layout {
+      grid-template-columns: 548px 1fr;
+      gap: 28px;
+      margin-top: 18px;
+    }
+    .business-left,
+    .business-right,
+    .loop-left,
+    .loop-right {
+      min-width: 0;
+    }
+    .business-case-slide .case-question {
+      padding: 16px 20px;
+      border-radius: 13px;
+    }
+    .business-case-slide .case-question span {
+      margin-bottom: 7px;
+      font-size: 10.8px;
+    }
+    .business-case-slide .case-question strong {
+      font-size: 20px;
+      line-height: 1.24;
+    }
+    .business-paths {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .business-case-slide .business-paths {
+      gap: 9px;
+      margin-top: 11px;
+    }
+    .business-path {
+      padding: 17px 18px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.82);
+    }
+    .business-case-slide .business-path {
+      padding: 13px 16px;
+      border-radius: 11px;
+    }
+    .business-path.green { border-left: 4px solid var(--green); }
+    .business-path.blue { border-left: 4px solid var(--blue); }
+    .business-path > span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .business-case-slide .business-path > span {
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+    .business-case-slide .path-chain {
+      gap: 8px;
+    }
+    .business-case-slide .path-chain strong {
+      min-height: 36px;
+      padding: 7px 8px;
+      font-size: 13.4px;
+      line-height: 1.16;
+    }
+    .business-case-slide .path-chain em {
+      font-size: 16px;
+    }
+    .business-right,
+    .loop-right {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 12px;
+      align-content: start;
+    }
+    .business-case-slide .business-right {
+      gap: 10px;
+    }
+    .business-case-slide .schema-title {
+      margin-bottom: 7px;
+      font-size: 10.8px;
+    }
+    .business-model {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.76);
+    }
+    .business-case-slide .business-model {
+      gap: 8px;
+      padding: 12px;
+      border-radius: 12px;
+    }
+    .business-model .schema-node {
+      min-height: 68px;
+      padding: 12px 14px;
+      border-radius: 10px;
+    }
+    .business-case-slide .business-model .schema-node {
+      min-height: 58px;
+      padding: 10px 12px;
+      border-radius: 9px;
+    }
+    .business-model .schema-node strong {
+      font-size: 15.5px;
+      margin-bottom: 6px;
+    }
+    .business-case-slide .business-model .schema-node strong {
+      font-size: 14.8px;
+      margin-bottom: 5px;
+    }
+    .business-model .schema-node span {
+      font-size: 12.5px;
+      line-height: 1.22;
+    }
+    .business-case-slide .business-model .schema-node span {
+      font-size: 11.8px;
+      line-height: 1.18;
+    }
+    .business-model .schema-node:nth-child(5) {
+      grid-column: 1 / -1;
+    }
+    .business-case-slide .stat-tiles,
+    .business-loop-slide .stat-tiles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: none;
+      gap: 10px;
+    }
+    .business-case-slide .stat-tile,
+    .business-loop-slide .stat-tile {
+      min-height: 88px;
+      padding: 13px 13px;
+      border-radius: 11px;
+    }
+    .business-case-slide .stat-tile {
+      min-height: 76px;
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+    .business-case-slide .stat-tile strong,
+    .business-loop-slide .stat-tile strong {
+      font-size: 25px;
+    }
+    .business-case-slide .stat-tile strong {
+      font-size: 23px;
+    }
+    .business-case-slide .stat-tile span,
+    .business-loop-slide .stat-tile span {
+      margin-top: 8px;
+      font-size: 12.5px;
+      line-height: 1.22;
+    }
+    .business-case-slide .stat-tile span {
+      margin-top: 6px;
+      font-size: 11.7px;
+      line-height: 1.16;
+    }
+    .risk-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .risk-item {
+      min-height: 100px;
+      padding: 14px 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.86);
+    }
+    .risk-item span {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid rgba(232,199,126,.55);
+      color: var(--amber);
+      font-size: 10.5px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-bottom: 12px;
+    }
+    .risk-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 16.2px;
+      line-height: 1.18;
+      margin-bottom: 7px;
+    }
+    .risk-item p {
+      color: var(--muted);
+      font-size: 12.3px;
+      line-height: 1.23;
+    }
+    .business-steps {
+      margin-top: 12px;
+      padding: 16px 18px;
+      border-radius: 13px;
+    }
+    .business-steps span {
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+    .business-steps code {
+      padding: 8px 10px;
+      margin-top: 7px;
+      font-size: 12.1px;
+      line-height: 1.18;
+      white-space: normal;
+    }
+    .business-steps b {
+      color: var(--text);
+      font-weight: 820;
+    }
+    .search-layout {
+      display: grid;
+      grid-template-columns: 620px 1fr;
+      gap: 36px;
+      align-items: stretch;
+      margin-top: 24px;
+    }
+    .business-search-slide .scenario-lead {
+      margin-top: 16px;
+      max-width: 1040px;
+      font-size: 20px;
+      line-height: 1.32;
+    }
+    .search-map {
+      min-width: 0;
+      padding: 22px 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(48,56,61,.92);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(155,231,197,.12), transparent 34%),
+        rgba(17,20,23,.78);
+    }
+    .search-root {
+      display: grid;
+      place-items: center;
+      min-height: 68px;
+      border-radius: 999px;
+      border: 2px solid rgba(155,231,197,.68);
+      background: rgba(155,231,197,.10);
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .frontier-list {
+      display: grid;
+      gap: 12px;
+    }
+    .frontier-row {
+      position: relative;
+      padding: 14px 16px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(11,13,14,.52);
+    }
+    .frontier-row::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -13px;
+      width: 1px;
+      height: 13px;
+      background: rgba(155,231,197,.34);
+    }
+    .frontier-row > span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .frontier-nodes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .frontier-nodes strong {
+      display: grid;
+      place-items: center;
+      min-height: 42px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(48,56,61,.95);
+      background: rgba(17,20,23,.9);
+      color: var(--text);
+      font-size: 14.3px;
+      line-height: 1.16;
+      text-align: center;
+    }
+    .frontier-0 { border-left: 4px solid var(--green); }
+    .frontier-1 { border-left: 4px solid var(--blue); }
+    .frontier-2 { border-left: 4px solid var(--amber); }
+    .search-proof {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 14px;
+      align-content: start;
+      min-width: 0;
+    }
+    .fit-list {
+      display: grid;
+      gap: 10px;
+    }
+    .fit-item {
+      min-height: 84px;
+      padding: 15px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(17,20,23,.86);
+    }
+    .fit-item.green { border-left-color: var(--green); }
+    .fit-item.blue { border-left-color: var(--blue); }
+    .fit-item.amber { border-left-color: var(--amber); }
+    .fit-item h3 {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.18;
+      margin-bottom: 7px;
+    }
+    .fit-item p {
+      color: var(--muted);
+      font-size: 13.2px;
+      line-height: 1.28;
+    }
+    .business-search-slide .stat-tiles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: none;
+      gap: 10px;
+    }
+    .business-search-slide .stat-tile {
+      min-height: 86px;
+      padding: 12px 13px;
+      border-radius: 11px;
+    }
+    .business-search-slide .stat-tile strong {
+      font-size: 24px;
+    }
+    .business-search-slide .stat-tile span {
+      margin-top: 7px;
+      font-size: 12.2px;
+      line-height: 1.18;
+    }
+    .future-entry-slide .scenario-lead {
+      margin-top: 16px;
+      max-width: 1040px;
+      font-size: 20px;
+      line-height: 1.32;
+    }
+    .future-layout {
+      display: grid;
+      grid-template-columns: 470px 1fr;
+      gap: 36px;
+      align-items: stretch;
+      margin-top: 28px;
+    }
+    .future-boundary,
+    .future-entry-list {
+      min-width: 0;
+    }
+    .future-boundary {
+      padding: 22px 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(232,199,126,.48);
+      background:
+        radial-gradient(circle at 84% 10%, rgba(232,199,126,.12), transparent 30%),
+        rgba(17,20,23,.82);
+    }
+    .future-boundary > span {
+      display: block;
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .future-boundary > strong {
+      display: block;
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1.22;
+      font-weight: 780;
+      margin-bottom: 14px;
+    }
+    .future-boundary > p {
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.42;
+    }
+    .future-signals {
+      display: grid;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .future-signal {
+      padding: 13px 15px;
+      border-radius: 11px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(11,13,14,.48);
+    }
+    .future-signal.green { border-left-color: var(--green); }
+    .future-signal.blue { border-left-color: var(--blue); }
+    .future-signal.amber { border-left-color: var(--amber); }
+    .future-signal h3 {
+      color: var(--text);
+      font-size: 16.5px;
+      line-height: 1.18;
+      margin-bottom: 6px;
+    }
+    .future-signal p {
+      color: var(--muted);
+      font-size: 12.8px;
+      line-height: 1.28;
+    }
+    .future-entry-list {
+      display: grid;
+      gap: 14px;
+    }
+    .future-entry {
+      min-height: 132px;
+      padding: 18px 20px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(17,20,23,.86);
+    }
+    .future-entry.green { border-left-color: var(--green); }
+    .future-entry.blue { border-left-color: var(--blue); }
+    .future-entry.amber { border-left-color: var(--amber); }
+    .future-entry h3 {
+      color: var(--text);
+      font-size: 21px;
+      line-height: 1.18;
+      margin-bottom: 9px;
+    }
+    .future-entry p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.32;
+      margin-bottom: 10px;
+    }
+    .future-entry em {
+      display: block;
+      color: var(--green);
+      font-size: 14.2px;
+      line-height: 1.28;
+      font-style: normal;
+      font-weight: 720;
+    }
+    .future-entry.blue em { color: var(--blue); }
+    .future-entry.amber em { color: var(--amber); }
+    .scenario-lead {
+      margin-top: 20px;
+      max-width: 990px;
+      color: var(--muted);
+      font-size: 21px;
+      line-height: 1.38;
+    }
+    .scenario-layout,
+    .analysis-layout {
+      display: grid;
+      grid-template-columns: 530px 1fr;
+      gap: 40px;
+      align-items: stretch;
+      margin-top: 34px;
+    }
+    .scenario-flow-panel,
+    .analysis-tree,
+    .scenario-evidence-panel,
+    .analysis-proof {
+      min-width: 0;
+    }
+    .scenario-flow-panel,
+    .analysis-tree {
+      min-height: 390px;
+      padding: 24px;
+      border-radius: 18px;
+      border: 1px solid rgba(48,56,61,.92);
+      background:
+        radial-gradient(circle at 72% 14%, rgba(155,231,197,.10), transparent 30%),
+        rgba(17,20,23,.86);
+    }
+    .scenario-steps {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+    .scenario-step {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      column-gap: 14px;
+      min-height: 60px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(11,13,14,.52);
+    }
+    .scenario-step span {
+      grid-row: 1 / span 2;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.54);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .scenario-step h3 {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.15;
+      font-weight: 760;
+    }
+    .scenario-step p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13.8px;
+      line-height: 1.32;
+    }
+    .scenario-step-line {
+      justify-self: start;
+      width: 1px;
+      height: 9px;
+      margin-left: 32px;
+      background: rgba(155,231,197,.34);
+    }
+    .scenario-evidence-panel,
+    .analysis-proof {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+      min-height: 390px;
+    }
+    .evidence-label {
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .stat-tiles {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .stat-tile {
+      min-height: 104px;
+      padding: 20px 24px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.88);
+    }
+    .stat-tile.green { border-color: rgba(155,231,197,.52); box-shadow: inset 0 3px 0 var(--green); }
+    .stat-tile.blue { border-color: rgba(118,214,255,.52); box-shadow: inset 0 3px 0 var(--blue); }
+    .stat-tile.amber { border-color: rgba(232,199,126,.52); box-shadow: inset 0 3px 0 var(--amber); }
+    .stat-tile strong {
+      display: block;
+      color: var(--green);
+      font-size: 38px;
+      line-height: 1.05;
+      font-weight: 820;
+      letter-spacing: -0.015em;
+    }
+    .stat-tile.blue strong { color: var(--blue); }
+    .stat-tile.amber strong { color: var(--amber); }
+    .stat-tile span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.32;
+    }
+    .compact-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .compact-card {
+      min-height: 276px;
+      padding: 20px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(23,27,31,.86);
+    }
+    .compact-card.green { border-left-color: var(--green); }
+    .compact-card.blue { border-left-color: var(--blue); }
+    .compact-card.amber { border-left-color: var(--amber); }
+    .compact-card h3 {
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.22;
+      margin-bottom: 12px;
+    }
+    .compact-card p {
+      color: var(--muted);
+      font-size: 14.6px;
+      line-height: 1.42;
+    }
+    .analysis-tree {
+      display: grid;
+      align-content: center;
+      gap: 34px;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(118,214,255,.12), transparent 28%),
+        rgba(17,20,23,.86);
+    }
+    .analysis-question {
+      display: grid;
+      place-items: center;
+      min-height: 118px;
+      padding: 24px 30px;
+      border-radius: 999px;
+      border: 2px solid rgba(155,231,197,.72);
+      background: rgba(155,231,197,.10);
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 780;
+      text-align: center;
+    }
+    .analysis-paths {
+      display: grid;
+      gap: 18px;
+    }
+    .analysis-path {
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(11,13,14,.52);
+    }
+    .analysis-path.green { border-left: 4px solid var(--green); }
+    .analysis-path.blue { border-left: 4px solid var(--blue); }
+    .analysis-path span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 820;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .path-chain {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--faint);
+    }
+    .path-chain strong {
+      flex: 1 1 0;
+      min-height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(48,56,61,.92);
+      background: rgba(17,20,23,.86);
+      color: var(--text);
+      font-size: 14.2px;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .path-chain em {
+      color: var(--green);
+      font-style: normal;
+      font-size: 18px;
+    }
+    .roadmap-lanes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-top: 62px;
+    }
+    .roadmap-lane {
+      min-height: 282px;
+      padding: 28px 28px 30px;
+      border-radius: 16px;
+      border: 1px solid rgba(48,56,61,.92);
+      background:
+        radial-gradient(circle at 82% 12%, rgba(155,231,197,.09), transparent 30%),
+        var(--panel);
+      border-top: 4px solid var(--line);
+    }
+    .roadmap-lane.green { border-top-color: var(--green); }
+    .roadmap-lane.blue { border-top-color: var(--blue); }
+    .roadmap-lane.amber { border-top-color: var(--amber); }
+    .roadmap-lane span {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.45);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-bottom: 24px;
+    }
+    .roadmap-lane h3 {
+      color: var(--text);
+      font-size: 25px;
+      line-height: 1.2;
+      margin-bottom: 18px;
+    }
+    .roadmap-lane p {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+    .roadmap-takeaway {
+      margin: 40px auto 0;
+      max-width: 960px;
+      color: var(--green);
+      font-size: 22px;
+      line-height: 1.42;
+      text-align: center;
+      font-weight: 680;
+    }
+    .qa-layout {
+      display: grid;
+      grid-template-columns: 520px 1fr;
+      gap: 58px;
+      align-items: center;
+      min-height: 620px;
+    }
+    .qa-main h2 {
+      max-width: 520px;
+      font-size: 104px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .qa-main .scenario-lead {
+      margin-top: 26px;
+      max-width: 470px;
+      font-size: 24px;
+      line-height: 1.38;
+    }
+    .qa-github {
+      margin-top: 34px;
+      color: var(--blue);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+    .qa-questions {
+      display: grid;
+      gap: 18px;
+    }
+    .qa-question {
+      min-height: 128px;
+      padding: 24px 28px;
+      border-radius: 16px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background:
+        radial-gradient(circle at 88% 10%, rgba(155,231,197,.09), transparent 30%),
+        rgba(17,20,23,.86);
+    }
+    .qa-question:nth-child(1) { border-left-color: var(--green); }
+    .qa-question:nth-child(2) { border-left-color: var(--blue); }
+    .qa-question:nth-child(3) { border-left-color: var(--amber); }
+    .qa-question span {
+      display: block;
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+    }
+    .qa-question h3 {
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .qa-question p {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.42;
+    }
     .footer {
       position: absolute;
       left: 72px;
       right: 72px;
       bottom: 34px;
       display: flex;
+      align-items: center;
       justify-content: flex-end;
       color: var(--faint);
       font-size: 12px;
@@ -1856,7 +3654,7 @@ const html = `<!doctype html>
         position: relative;
         display: block !important;
         width: 100vw;
-        height: 56.25vw;
+        height: 62.5vw;
         page-break-after: always;
       }
     }
@@ -1870,7 +3668,13 @@ const html = `<!doctype html>
   <script>
     const slides = [...document.querySelectorAll(".slide")];
     const progress = document.querySelector(".progress");
+    const DESIGN_WIDTH = 1440;
+    const DESIGN_HEIGHT = 900;
     let current = 0;
+    function fitDeck() {
+      const scale = Math.min(innerWidth / DESIGN_WIDTH, innerHeight / DESIGN_HEIGHT);
+      document.documentElement.style.setProperty("--deck-scale", Math.max(0.1, scale).toFixed(4));
+    }
     function clamp(n) { return Math.max(0, Math.min(slides.length - 1, n)); }
     function show(n, updateHash = true) {
       current = clamp(n);
@@ -1892,7 +3696,9 @@ const html = `<!doctype html>
       if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
       show(current + (event.clientX > innerWidth * 0.25 ? 1 : -1));
     });
+    addEventListener("resize", fitDeck);
     addEventListener("hashchange", () => show(fromHash(), false));
+    fitDeck();
     show(fromHash(), false);
   </script>
 </body>

@@ -3,10 +3,11 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "/Users/longbinlai/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..");
-const fileUrl = `file://${path.join(root, "outputs", "neug-llm-agent-graph-engine-slides.html")}`;
+const outDir = path.join(__dirname, "outputs");
+const fileUrl = `file://${path.join(outDir, "neug-blueprint-slides.html")}`;
 const viewportWidth = Number(process.env.VIEWPORT_WIDTH || 1440);
 const viewportHeight = Number(process.env.VIEWPORT_HEIGHT || 900);
+
 const browser = await chromium.launch({
   headless: true,
   executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -19,7 +20,7 @@ const count = await page.locator(".slide").count();
 for (const slide of Array.from({ length: count }, (_, i) => i + 1)) {
   await page.goto(`${fileUrl}#/${slide}`);
   await page.screenshot({
-    path: path.join(root, "outputs", `neug-html-slide-${slide}.png`),
+    path: path.join(outDir, `neug-blueprint-slide-${slide}.png`),
     fullPage: true,
   });
 }
