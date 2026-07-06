@@ -135,28 +135,36 @@ const slides = [
   {
     kind: "knowledge-update",
     kicker: "组织知识",
-    title: "研发知识库｜用增量维护控制知识漂移",
-    lead: "代码和设计一直在变。关键不是反复重写 wiki，而是让每次 PR 都能回答：影响哪些模块、concept 和页面，哪些更新需要人审后入库。",
-    delta: [
-      ["PR 变更", "函数、接口、文档和配置产生新关系"],
-      ["影响传播", "相关模块、concept、wiki 页面被标记出来"],
-      ["知识入库", "更新建议经过 review 后合并"],
+    title: "研发知识库｜把每次提交变成可维护的知识更新",
+    lead: "代码和设计一直在变。每次提交都会让函数、接口、文档和配置产生新关系；如果没有维护链路，wiki 会逐步偏离事实，最后让 Agent 引用失真。",
+    stages: [
+      [
+        "提交更新",
+        "函数、接口、文档和配置出现新关系",
+        "不能直接写入正式库，需要先隔离验证",
+        "提交更新进入临时图，和正式知识库分层管理",
+        "green",
+      ],
+      [
+        "影响定位",
+        "变更可能牵动模块、concept 和 wiki 页面",
+        "要知道哪些页面必须更新，哪些答案会受影响",
+        "沿函数、模块、concept、wiki 页做关系扩展，标记待维护范围",
+        "blue",
+      ],
+      [
+        "审查入库",
+        "更新建议需要被人确认后才能沉淀",
+        "保留来源链路，支持审查、回滚和后续追溯",
+        "生成带来源链路的 wiki / concept 更新建议，再合并入正式图",
+        "amber",
+      ],
     ],
-    calls: [
-      ["临时图隔离", "PR / release diff 先进入临时图，避免直接改动正式知识库"],
-      ["影响分析", "沿函数、模块、concept 和 wiki 页计算需要维护的范围"],
-      ["审查入库", "生成 wiki / concept 更新建议，保留 source 后再合并"],
-    ],
-    findings: [
-      ["隔离变更", "新关系先在临时图里验证，正式知识库保持稳定", "green"],
-      ["定位范围", "影响分析直接给出需要更新的模块、概念和页面", "blue"],
-      ["保留回溯", "每次更新都带 source 链路，方便 review 和回滚", "amber"],
-    ],
-    stats: [
-      ["PR diff", "最小维护单元", "green"],
-      ["影响范围", "自动标记待更新页面", "blue"],
-      ["source", "答案和更新都可回溯", "amber"],
-    ],
+    conclusion: {
+      label: "NeuG 带来的闭环",
+      title: "维护单元从“整库重写”变成“每次提交更新”",
+      body: "知识库跟随代码增量演进，正式图保持稳定；Agent 使用答案时，也能回到具体来源和维护记录。",
+    },
   },
   {
     kind: "business-case",
@@ -218,7 +226,7 @@ const slides = [
     entries: [
       [
         "会后任务记忆",
-        "把会议纪要、IM、日历和 PR 关联到人、项目、截止时间。",
+        "把会议纪要、IM、日历和提交记录关联到人、项目、截止时间。",
         "可回答：上次周会提到的 blocker，后来是谁在跟？",
         "green",
       ],
@@ -696,47 +704,35 @@ function renderSlide(slide, index) {
         <div class="kicker">${esc(slide.kicker)}</div>
         <h2>${esc(slide.title)}</h2>
         <p class="scenario-lead">${esc(slide.lead)}</p>
-        <div class="update-layout">
-          <div class="update-left">
-            <div class="delta-stack">
-              ${slide.delta
-                .map(
-                  ([title, body], i) => `
-                    <div class="delta-item">
-                      <span>${String(i + 1).padStart(2, "0")}</span>
-                      <strong>${esc(title)}</strong>
-                      <p>${esc(body)}</p>
-                    </div>`,
-                )
-                .join("")}
-            </div>
-            <div class="call-sequence">
-              <span>NeuG 维护闭环</span>
-              ${slide.calls
-                .map(
-                  ([title, body]) => `
-                    <div class="call-step">
-                      <strong>${esc(title)}</strong>
-                      <p>${esc(body)}</p>
-                    </div>`,
-                )
-                .join("")}
-            </div>
+        <div class="update-map">
+          <div class="update-map-head">
+            <span>变更流程</span>
+            <span>维护需求</span>
+            <span>NeuG 能力</span>
           </div>
-          <div class="update-right">
-            <div class="finding-list">
-              ${slide.findings
-                .map(
-                  ([title, body, accent]) => `
-                    <article class="finding${cls(accent)}">
-                      <h3>${esc(title)}</h3>
-                      <p>${esc(body)}</p>
-                    </article>`,
-                )
-                .join("")}
-            </div>
-            ${renderStatTiles(slide.stats)}
-          </div>
+          ${slide.stages
+            .map(
+              ([title, change, need, capability, accent], i) => `
+                <article class="update-row${cls(accent)}">
+                  <div class="update-stage">
+                    <em>${String(i + 1).padStart(2, "0")}</em>
+                    <strong>${esc(title)}</strong>
+                    <p>${esc(change)}</p>
+                  </div>
+                  <div class="update-need">
+                    <p>${esc(need)}</p>
+                  </div>
+                  <div class="update-capability">
+                    <p>${esc(capability)}</p>
+                  </div>
+                </article>`,
+            )
+            .join("")}
+        </div>
+        <div class="update-conclusion">
+          <span>${esc(slide.conclusion.label)}</span>
+          <strong>${esc(slide.conclusion.title)}</strong>
+          <p>${esc(slide.conclusion.body)}</p>
         </div>
         ${renderFooter(page)}
       </section>`;
@@ -2723,98 +2719,118 @@ const html = `<!doctype html>
     }
     .knowledge-update-slide .scenario-lead {
       margin-top: 16px;
-      max-width: 980px;
+      max-width: 1080px;
       font-size: 20px;
       line-height: 1.32;
     }
-    .knowledge-update-slide .update-layout {
-      grid-template-columns: 560px 1fr;
-      gap: 36px;
+    .knowledge-update-slide .update-map {
+      display: grid;
+      gap: 8px;
       margin-top: 24px;
     }
-    .knowledge-update-slide .delta-stack {
+    .knowledge-update-slide .update-map-head {
+      display: grid;
+      grid-template-columns: 292px 1fr 1.18fr;
       gap: 10px;
+      padding: 0 18px 2px 18px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
-    .knowledge-update-slide .delta-item {
-      min-height: 102px;
-      padding: 14px 14px;
-      border-radius: 11px;
+    .knowledge-update-slide .update-row {
+      display: grid;
+      grid-template-columns: 292px 1fr 1.18fr;
+      gap: 10px;
+      min-height: 112px;
+      border-radius: 13px;
+      border: 1px solid rgba(48,56,61,.92);
+      border-left: 4px solid var(--line);
+      background: rgba(17,20,23,.82);
+      overflow: hidden;
     }
-    .knowledge-update-slide .delta-item span {
+    .knowledge-update-slide .update-row.green { border-left-color: var(--green); }
+    .knowledge-update-slide .update-row.blue { border-left-color: var(--blue); }
+    .knowledge-update-slide .update-row.amber { border-left-color: var(--amber); }
+    .knowledge-update-slide .update-stage,
+    .knowledge-update-slide .update-need,
+    .knowledge-update-slide .update-capability {
+      min-width: 0;
+      padding: 15px 18px;
+    }
+    .knowledge-update-slide .update-need,
+    .knowledge-update-slide .update-capability {
+      display: flex;
+      align-items: center;
+      border-left: 1px solid rgba(48,56,61,.72);
+    }
+    .knowledge-update-slide .update-stage em {
+      display: inline-grid;
+      place-items: center;
       width: 28px;
       height: 28px;
-      margin-bottom: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.46);
+      color: var(--green);
+      font-style: normal;
       font-size: 10.5px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-right: 10px;
+      vertical-align: middle;
     }
-    .knowledge-update-slide .delta-item strong {
-      font-size: 16.5px;
-      margin-bottom: 7px;
+    .knowledge-update-slide .update-stage strong {
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.16;
+      vertical-align: middle;
     }
-    .knowledge-update-slide .delta-item p {
-      font-size: 12.6px;
-      line-height: 1.24;
+    .knowledge-update-slide .update-stage p {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.26;
     }
-    .knowledge-update-slide .call-sequence {
-      margin-top: 12px;
-      padding: 16px 18px;
-      border-radius: 13px;
+    .knowledge-update-slide .update-need p,
+    .knowledge-update-slide .update-capability p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.32;
     }
-    .knowledge-update-slide .call-sequence span {
-      margin-bottom: 8px;
-      font-size: 11px;
+    .knowledge-update-slide .update-capability p {
+      color: var(--text);
     }
-    .knowledge-update-slide .call-step {
-      margin-top: 8px;
-      padding: 10px 12px;
-      border-radius: 9px;
-      background: rgba(11,13,14,.64);
+    .knowledge-update-slide .update-conclusion {
+      margin-top: 14px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(118,214,255,.46);
+      background:
+        radial-gradient(circle at 92% 12%, rgba(118,214,255,.12), transparent 30%),
+        rgba(15,27,33,.68);
     }
-    .knowledge-update-slide .call-step strong {
+    .knowledge-update-slide .update-conclusion span {
       display: block;
       color: var(--blue);
-      font-size: 13.5px;
-      line-height: 1.2;
-      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
     }
-    .knowledge-update-slide .call-step p {
+    .knowledge-update-slide .update-conclusion strong {
+      display: block;
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.18;
+      margin-bottom: 7px;
+    }
+    .knowledge-update-slide .update-conclusion p {
+      max-width: 980px;
       color: var(--muted);
-      font-size: 12.3px;
-      line-height: 1.25;
-    }
-    .knowledge-update-slide .update-right {
-      gap: 12px;
-    }
-    .knowledge-update-slide .finding-list {
-      gap: 10px;
-    }
-    .knowledge-update-slide .finding {
-      min-height: 82px;
-      padding: 14px 16px;
-      border-radius: 11px;
-    }
-    .knowledge-update-slide .finding h3 {
-      font-size: 17px;
-      margin-bottom: 6px;
-    }
-    .knowledge-update-slide .finding p {
-      font-size: 13px;
+      font-size: 13.6px;
       line-height: 1.28;
-    }
-    .knowledge-update-slide .stat-tiles {
-      gap: 10px;
-    }
-    .knowledge-update-slide .stat-tile {
-      min-height: 86px;
-      padding: 12px 13px;
-      border-radius: 11px;
-    }
-    .knowledge-update-slide .stat-tile strong {
-      font-size: 24px;
-    }
-    .knowledge-update-slide .stat-tile span {
-      margin-top: 7px;
-      font-size: 12.4px;
-      line-height: 1.2;
     }
     .business-layout,
     .business-loop-layout {
