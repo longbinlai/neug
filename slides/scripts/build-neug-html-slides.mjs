@@ -65,7 +65,7 @@ const slides = [
     ldbc300: {
       title: "LDBC-300 标准图测试",
       current: "110,000",
-      official: "80,510.79",
+      official: "80,511",
       lift: "+36.6%",
       ops: "609,988,373 operations",
       threads: "192 worker threads",
