@@ -28,7 +28,7 @@ const sections = [
   { label: "定位", from: 1, to: 3 },
   { label: "基础能力", from: 4, to: 6 },
   { label: "组织知识", from: 7, to: 8 },
-  { label: "业务分析", from: 9, to: 10 },
+  { label: "业务数据分析", from: 9, to: 10 },
   { label: "探索与路线", from: 11, to: 13 },
 ];
 
@@ -257,9 +257,10 @@ const blueprintCss = String.raw`
     .call-sequence,
     .finding,
     .business-path,
-    .search-map,
-    .frontier-row,
-    .fit-item,
+    .business-search-slide .analysis-tree,
+    .main-node,
+    .side-node,
+    .tree-takeaway,
     .future-boundary,
     .future-signal,
     .future-entry,
@@ -303,7 +304,8 @@ const blueprintCss = String.raw`
     }
     .context-node,
     .schema-node,
-    .frontier-nodes strong,
+    .main-node,
+    .side-node,
     .path-chain strong,
     .query-chip,
     .scenario-step,
@@ -336,7 +338,7 @@ const blueprintCss = String.raw`
     .proof-metric strong,
     .roadmap-takeaway,
     .future-entry em,
-    .search-root,
+    .tree-stage.final .main-node h3,
     .analysis-question {
       color: var(--cyan) !important;
     }
@@ -352,7 +354,7 @@ const blueprintCss = String.raw`
       border-left-color: var(--neug-blue);
     }
     .slide[data-section="组织知识"] .kicker,
-    .slide[data-section="业务分析"] .kicker,
+    .slide[data-section="业务数据分析"] .kicker,
     .slide[data-section="个人与设备记忆"] .kicker {
       color: var(--cyan);
     }
@@ -460,7 +462,7 @@ const blueprintCss = String.raw`
     .knowledge-case-slide .knowledge-layout,
     .knowledge-update-slide .update-layout,
     .business-case-slide .business-layout,
-    .search-layout,
+    .analysis-tree-panel,
     .future-layout {
       margin-top: 30px;
     }
@@ -514,16 +516,6 @@ const blueprintCss = String.raw`
     .business-case-slide .business-model .schema-node {
       min-height: 66px;
       padding: 12px 14px;
-    }
-    .search-map {
-      padding: 24px 26px;
-    }
-    .fit-item {
-      min-height: 91px;
-      padding: 17px 20px;
-    }
-    .frontier-row {
-      padding: 16px 18px;
     }
     .roadmap-lanes {
       margin-top: 72px;

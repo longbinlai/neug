@@ -25,7 +25,7 @@ const slides = [
     lead: "问题不是给模型塞进更多 token，而是维护一层能持续更新、检索和分析的上下文关系网。",
     cards: [
       ["组织知识", "LLM Wiki 说明了一个方向：组织知识不能只靠临时切片召回，需要把原始资料整理成可维护的知识层。企业里还要同时维护文档、代码、会议、项目和人员关系。", "green"],
-      ["业务分析", "经营分析需要沿客户、商品、渠道、组织和时间连续追问。难点不是生成一次 SQL，而是维护可复用的分析上下文和中间结果。", "blue"],
+      ["业务数据分析", "经营分析需要沿客户、商品、渠道、组织和时间连续追问。难点不是生成一次 SQL，而是维护可复用的分析上下文和中间结果。", "blue"],
       ["个人与设备记忆", "个人工具和设备需要维护人、地点、事件、资料、任务和时间线的本地关联上下文。重点不是设备形态，而是端上持续积累的关系网络。", "amber"],
     ],
     quote: "In the extreme view, the world can be seen as only connections, nothing else.",
@@ -102,7 +102,7 @@ const slides = [
     ],
     scenarios: [
       ["组织知识", "green"],
-      ["业务分析", "blue"],
+      ["业务数据分析", "blue"],
       ["个人与设备记忆", "amber"],
     ],
   },
@@ -168,21 +168,21 @@ const slides = [
   },
   {
     kind: "business-case",
-    kicker: "业务分析",
-    title: "业务分析｜先从招聘与岗位变化切入",
-    lead: "业务分析覆盖面广，招聘与岗位变化适合作为第一类验证场景：岗位、职业、职级、地区和时间天然相连，NeuG 可以先把这些口径建成业务图。",
+    kicker: "业务数据分析",
+    title: "业务数据分析｜先从招聘与岗位变化切入",
+    lead: "业务数据分析覆盖面广，招聘与岗位变化适合作为第一类验证场景：岗位、职业、职级、地区和时间天然相连，NeuG 可以先把这些口径建成业务图。",
     caseLabel: "NeuGBI 案例问题",
     question: "AI 对美国就业的冲击有多大？",
     modelNodes: [
-      ["Job", "岗位记录 / 招聘数量", "green"],
-      ["Occupation", "职业分类 / 软件开发", "blue"],
-      ["Seniority", "L1-L7 / Junior vs Senior", "amber"],
-      ["Region", "州 / 地区变化", "blue"],
-      ["Time", "2021-2025 趋势", "green"],
+      ["岗位记录", "招聘数量 / 岗位变化", "green"],
+      ["职业分类", "计算机相关 / 软件开发", "blue"],
+      ["资历层级", "基础岗位 L1-L2 / 资深岗位 L3+", "amber"],
+      ["地区", "州 / 地区变化", "blue"],
+      ["时间", "2021-2025 趋势", "green"],
     ],
     paths: [
       ["问题拆解", "AI 冲击", "招聘数量", "岗位结构"],
-      ["对比口径", "Junior", "Senior", "L1-L7"],
+      ["对比口径", "基础岗位", "资深岗位", "L1-L7"],
       ["证据落点", "职业分类", "软件开发", "地区 / 时间"],
     ],
     stats: [
@@ -193,74 +193,72 @@ const slides = [
   },
   {
     kind: "business-search",
-    kicker: "业务分析",
-    title: "业务分析｜像图搜索一样推进一次下钻",
-    lead: "上一页把岗位、职业、职级、地区和时间建成业务图；这一页看 Agent 如何围绕一个问题展开：先铺开候选方向，再沿异常分支深挖，最后把路径和证据沉淀下来。",
-    question: "AI 对美国就业的冲击有多大？",
-    rounds: [
-      [
-        "广度铺开",
-        "先看同一层的几个方向",
-        "从根问题同时看招聘总量、职业、职级、地区、时间，判断哪里最值得继续查。",
-        "职业与职级方向出现明显分化，进入下一轮。",
-        "green",
-      ],
-      [
-        "沿分支深挖",
-        "选中异常路径继续钻",
-        "沿 职业 → 计算机相关 → 软件开发 → L1/L2/L3+ 逐层缩小范围，不再平均展开所有方向。",
-        "软件开发 L2 从 280 万降到 145 万，成为需要解释的关键落点。",
-        "blue",
-      ],
-      [
-        "复核并回写",
-        "把结论和证据留在图里",
-        "回到地区和时间维度复核趋势，把查询路径、采样结果和证据链接写回分析图。",
-        "下一次追问可以从这条路径继续，而不是重新组织上下文。",
-        "amber",
-      ],
+    kicker: "业务数据分析",
+    title: "业务数据分析｜从开放问题下钻到软件开发 L2",
+    lead: "这页把一次 NeuGBI 分析放进一棵树：先看整体趋势确认数据里有下降信号，再按资历层级定位基础岗位，接着在基础岗位里按职业和岗位继续缩小范围，最终收敛到软件开发 L2。",
+    treeStages: [
+      {
+        label: "分析入口",
+        main: ["AI 影响了哪些美国岗位？", "数据：Revelio 2021-2025，60GB / 3 亿条就业记录", "先找下降集中在哪类岗位，不直接用总量下结论"],
+        side: [],
+      },
+      {
+        label: "第一轮",
+        main: ["先看整体趋势", "整体就业记录出现下降，但混有覆盖、周期和岗位结构变化", "这一步只说明值得继续拆，不和后续分层降幅直接对比"],
+        side: [["保留为背景", "总量节点只提示问题存在，不参与后续百分比对齐"]],
+      },
+      {
+        label: "第二轮",
+        main: ["按资历层级拆开", "基础岗位 L1-L2 -29.4%；资深岗位 L3+ -5.8%", "下降明显集中在基础岗位，下一步只沿基础岗位继续查"],
+        side: [],
+      },
+      {
+        label: "第三轮",
+        main: ["按职业对比，选中计算机相关分支", "计算机相关职业 2022-2024：招聘数量 -64%", "这条职业分支下降明显，继续看其中的软件开发岗位"],
+        side: [["地区 / 时间复核", "多个主要州同向下降；按年份切片，避免把单点异常当趋势"]],
+      },
+      {
+        label: "结论节点",
+        main: ["落到岗位和职级", "软件开发 L2：280 万 → 145 万；L1 和 L3+ 基本稳定", "结论：软件开发 L2 职级下降最明显"],
+        side: [],
+      },
     ],
-    path: ["根问题", "职业", "计算机相关", "软件开发", "L2", "地区 / 时间复核"],
-    graphFit: [
-      ["广度优先", "先铺开同一层候选方向，快速判断哪条线最异常。"],
-      ["深度优先", "选中异常分支后连续下钻，直到落到可解释的人群或岗位。"],
-      ["图数据库适配点", "每一轮的节点、边、证据和中间结果都能作为路径状态保存。"],
-    ],
+    takeaway: "NeuG 保存的不是一句答案，而是这棵可复用分析树：每一步为什么分支、哪些分支只做校准、证据来自哪个采样查询、下一轮从哪里继续，都沉淀为图上的节点和边。",
   },
   {
     kind: "future-entry",
     kicker: "个人与设备记忆",
-    title: "个人与设备记忆｜从小场景验证端侧关联索引",
-    lead: "这个方向还在探索阶段，先从个人高频、数据边界清楚的小场景验证 NeuG 对事件、资料和任务关系的管理价值。",
+    title: "个人与设备记忆｜千问眼镜需要端侧关系图",
+    lead: "千问眼镜这类随身设备会持续产生“看到的人、地点、画面、对话、后续任务”。真正难点不是保存更多文本，而是把这些事件在本地连成可追问、可删除、可复核的关系图。",
     boundary: {
-      label: "验证方式",
-      title: "先选数据边界清楚的小场景",
-      body: "下面三个入口都有明确的数据来源和可回答的问题，后续可以选择一个做演示验证，判断本地关系索引是否真的能提升 Agent 记忆能力。",
+      label: "潜在切入",
+      title: "千问眼镜负责捕获事件，NeuG 负责管理关系",
+      body: "一次线下交流不是一段孤立录音，而是人、地点、时间、画面、材料和任务的组合。NeuG 可以在端侧维护这些节点和边，让 Agent 按关系找回上下文。",
     },
     entries: [
       [
-        "会后任务记忆",
-        "把会议纪要、IM、日历和提交记录关联到人、项目、截止时间。",
-        "可回答：上次周会提到的 blocker，后来是谁在跟？",
+        "多模态事件结构化",
+        "眼镜捕获到的对话摘要、OCR、图片线索和时间地点，抽成 Event / Person / Place / Artifact 节点。",
+        "图关系：一次客户拜访 → 参与人 → 看到的材料 → 提到的问题",
         "green",
       ],
       [
-        "个人资料回溯",
-        "本地文档、代码片段、浏览记录只抽取摘要、来源和任务关系。",
-        "可回答：这个设计决策当时参考了哪几份材料？",
+        "多跳追问和上下文找回",
+        "用户问“上次客户现场提到的兼容问题”，需要同时沿人、地点、时间、材料和任务多跳定位证据。",
+        "NeuG 先缩小候选子图，再交给模型组织回答",
         "blue",
       ],
       [
-        "设备事件索引",
-        "手机或眼镜只记录轻量事件：见了谁、在哪、关联哪件事。",
-        "可回答：上周在客户现场提到的需求是什么？",
+        "端侧可控记忆边界",
+        "只沉淀轻量摘要、来源和关系边；原始音视频不必长期进入 prompt 或云端记忆。",
+        "可按项目、人、时间删除、回滚和复核",
         "amber",
       ],
     ],
     signals: [
-      ["轻量嵌入", "先在桌面 Agent 或个人工具链里验证，不依赖新硬件。", "green"],
-      ["本地优先", "个人高频数据可以留在本机，只把必要摘要交给模型。", "blue"],
-      ["关系清楚", "人、事、时间、资料天然是图，比 prompt 历史更可维护。", "amber"],
+      ["设备入口", "千问眼镜提供连续、贴身、带场景的事件来源。", "green"],
+      ["关系索引", "人、地点、材料、任务和时间天然需要图关系，而不是线性聊天历史。", "blue"],
+      ["本地优先", "个人记忆必须可解释、可删除、可复核，适合嵌入式 NeuG。", "amber"],
     ],
   },
   {
@@ -270,8 +268,8 @@ const slides = [
     lead: "汇报结论：NeuG 不是单点图数据库，而是面向 LLM / Agent 的嵌入式图数据底座。",
     lanes: [
       ["组织知识闭环", "Vector + full-text + GDS + CLI，做企业知识库 / 代码知识库演示验证。", "green"],
-      ["业务分析闭环", "数据湖接入 + 采样 + NeuGBI，把招聘/经营分析跑成端到端演示验证。", "blue"],
-      ["个人记忆探索", "围绕会后任务、资料回溯或设备事件选择小场景，验证端侧关联索引价值。", "amber"],
+      ["业务数据分析闭环", "数据湖接入 + 采样 + NeuGBI，把招聘/经营分析跑成端到端演示验证。", "blue"],
+      ["个人记忆探索", "围绕千问眼镜等设备事件，验证端侧关系图索引价值。", "amber"],
     ],
   },
   {
@@ -861,47 +859,36 @@ function renderSlide(slide, index) {
         <div class="kicker">${esc(slide.kicker)}</div>
         <h2>${esc(slide.title)}</h2>
         <p class="scenario-lead">${esc(slide.lead)}</p>
-        <div class="search-layout">
-          <div class="search-process">
-            <div class="search-question">
-              <span>分析问题</span>
-              <strong>${esc(slide.question)}</strong>
-            </div>
-            <div class="search-rounds">
-              ${slide.rounds
-                .map(
-                  ([title, mode, action, outcome, accent], i) => `
-                    <article class="search-round${cls(accent)}">
-                      <em>${String(i + 1).padStart(2, "0")}</em>
-                      <div>
-                        <span>${esc(mode)}</span>
-                        <h3>${esc(title)}</h3>
-                        <p>${esc(action)}</p>
-                        <strong>${esc(outcome)}</strong>
-                      </div>
-                    </article>`,
-                )
-                .join("")}
-            </div>
+        <div class="analysis-tree-panel">
+          <div class="analysis-tree">
+            ${slide.treeStages
+              .map(
+                (stage, i) => `
+                  <section class="tree-stage${i === 0 ? " root" : ""}${i === slide.treeStages.length - 1 ? " final" : ""}">
+                    <span>${esc(stage.label)}</span>
+                    <article class="main-node">
+                      <h3>${esc(stage.main[0])}</h3>
+                      <p>${esc(stage.main[1])}</p>
+                      <strong>${esc(stage.main[2] ?? "")}</strong>
+                    </article>
+                    <div class="side-nodes">
+                      ${stage.side
+                        .map(
+                          ([title, body]) => `
+                            <article class="side-node">
+                              <h4>${esc(title)}</h4>
+                              <p>${esc(body)}</p>
+                            </article>`,
+                        )
+                        .join("")}
+                    </div>
+                  </section>`,
+              )
+              .join("")}
           </div>
-          <div class="search-proof">
-            <div class="path-panel">
-              <span>本轮被保留的搜索路径</span>
-              <div class="selected-path">
-                ${slide.path.map((node) => `<strong>${esc(node)}</strong>`).join("")}
-              </div>
-            </div>
-            <div class="fit-list">
-              ${slide.graphFit
-                .map(
-                  ([title, body]) => `
-                    <article class="fit-item">
-                      <h3>${esc(title)}</h3>
-                      <p>${esc(body)}</p>
-                    </article>`,
-                )
-                .join("")}
-            </div>
+          <div class="tree-takeaway">
+            <span>NeuG 保存的是分析树</span>
+            <p>${esc(slide.takeaway)}</p>
           </div>
         </div>
         ${renderFooter(page)}
@@ -3093,168 +3080,161 @@ const html = `<!doctype html>
       color: var(--text);
       font-weight: 820;
     }
-    .search-layout {
-      display: grid;
-      grid-template-columns: 670px 1fr;
-      gap: 36px;
-      align-items: stretch;
-      margin-top: 24px;
-    }
     .business-search-slide .scenario-lead {
       margin-top: 16px;
-      max-width: 1040px;
-      font-size: 20px;
-      line-height: 1.32;
+      max-width: 1120px;
+      font-size: 19.4px;
+      line-height: 1.3;
     }
-    .search-process {
-      min-width: 0;
+    .analysis-tree-panel {
       display: grid;
-      grid-template-rows: auto auto;
-      gap: 12px;
-      align-content: start;
+      gap: 16px;
+      margin-top: 28px;
     }
-    .search-question {
-      padding: 16px 20px;
-      border-radius: 14px;
-      border: 1px solid rgba(155,231,197,.52);
+    .business-search-slide .analysis-tree {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      min-height: 0;
+      padding: 24px 20px 22px;
+      border-radius: 16px;
+      border: 1px solid rgba(118,214,255,.42);
       background:
-        radial-gradient(circle at 92% 10%, rgba(155,231,197,.12), transparent 30%),
-        rgba(17,20,23,.86);
+        linear-gradient(rgba(118,214,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(118,214,255,.04) 1px, transparent 1px),
+        radial-gradient(circle at 88% 8%, rgba(118,214,255,.13), transparent 28%),
+        rgba(15,27,33,.7);
+      background-size: 30px 30px, 30px 30px, auto, auto;
     }
-    .search-question span,
-    .path-panel > span {
+    .business-search-slide .analysis-tree::before {
+      content: "";
+      position: absolute;
+      left: 8.5%;
+      right: 8.5%;
+      top: 148px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(155,231,197,.9), rgba(118,214,255,.92), rgba(232,199,126,.8));
+      opacity: .52;
+    }
+    .tree-stage {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: 24px minmax(188px, auto) 1fr;
+      gap: 11px;
+      min-width: 0;
+    }
+    .tree-stage > span,
+    .tree-takeaway span {
       display: block;
       color: var(--faint);
       font-size: 11px;
       font-weight: 820;
       letter-spacing: .08em;
       text-transform: uppercase;
-      margin-bottom: 8px;
     }
-    .search-question strong {
-      display: block;
-      color: var(--text);
-      font-size: 21px;
-      font-weight: 800;
-      line-height: 1.22;
-    }
-    .search-rounds {
-      display: grid;
-      gap: 10px;
-      align-content: start;
-    }
-    .search-round {
-      display: grid;
-      grid-template-columns: 38px 1fr;
-      gap: 14px;
-      min-height: 104px;
-      padding: 13px 16px;
+    .main-node {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 188px;
+      padding: 16px 14px;
       border-radius: 13px;
-      border: 1px solid rgba(48,56,61,.92);
-      border-left: 4px solid var(--line);
-      background: rgba(17,20,23,.82);
+      border: 1px solid rgba(118,214,255,.56);
+      background: rgba(17,20,23,.86);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
     }
-    .search-round.green { border-left-color: var(--green); }
-    .search-round.blue { border-left-color: var(--blue); }
-    .search-round.amber { border-left-color: var(--amber); }
-    .search-round em {
-      display: grid;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      border: 1px solid rgba(155,231,197,.46);
-      color: var(--green);
-      font-style: normal;
-      font-size: 11px;
-      font-weight: 820;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    .tree-stage.root .main-node {
+      border-color: rgba(155,231,197,.62);
+      background: rgba(155,231,197,.08);
     }
-    .search-round span {
-      display: block;
-      color: var(--blue);
-      font-size: 11px;
-      font-weight: 820;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      margin-bottom: 5px;
+    .tree-stage.final .main-node {
+      border-color: rgba(232,199,126,.62);
+      background: rgba(232,199,126,.08);
     }
-    .search-round h3 {
+    .main-node::after {
+      content: "";
+      position: absolute;
+      right: -13px;
+      top: 50%;
+      width: 13px;
+      height: 2px;
+      background: rgba(118,214,255,.58);
+    }
+    .tree-stage.final .main-node::after {
+      display: none;
+    }
+    .main-node h3 {
       color: var(--text);
-      font-size: 17px;
-      line-height: 1.15;
-      margin-bottom: 6px;
+      font-size: 17.7px;
+      line-height: 1.16;
+      margin-bottom: 9px;
     }
-    .search-round p {
+    .main-node p {
       color: var(--muted);
-      font-size: 13.1px;
-      line-height: 1.27;
-      margin-bottom: 8px;
+      font-size: 12.9px;
+      line-height: 1.26;
+      margin-bottom: 9px;
     }
-    .search-round strong {
+    .main-node strong {
       display: block;
+      margin-top: auto;
       color: var(--text);
-      font-size: 13px;
-      line-height: 1.24;
+      font-size: 12.7px;
+      line-height: 1.25;
       font-weight: 760;
     }
-    .search-proof {
+    .side-nodes {
       display: grid;
-      grid-template-rows: auto auto;
-      gap: 12px;
-      align-content: start;
-      min-width: 0;
-    }
-    .path-panel {
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(118,214,255,.42);
-      background:
-        radial-gradient(circle at 88% 12%, rgba(118,214,255,.12), transparent 30%),
-        rgba(15,27,33,.68);
-    }
-    .selected-path {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
+      align-content: start;
+      min-height: 88px;
     }
-    .selected-path strong {
+    .side-node {
       position: relative;
-      display: block;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(48,56,61,.95);
-      background: rgba(11,13,14,.64);
+      padding: 11px 12px;
+      border-radius: 11px;
+      border: 1px dashed rgba(147,164,189,.52);
+      background: rgba(11,13,14,.62);
+    }
+    .side-node::before {
+      content: "";
+      position: absolute;
+      left: 22px;
+      top: -11px;
+      width: 2px;
+      height: 10px;
+      background: rgba(147,164,189,.48);
+    }
+    .side-node h4 {
       color: var(--text);
-      font-size: 13px;
+      font-size: 13.6px;
       line-height: 1.16;
-      text-align: center;
+      margin-bottom: 5px;
     }
-    .fit-list {
-      display: grid;
-      gap: 10px;
-    }
-    .fit-item {
-      min-height: 78px;
-      padding: 13px 16px;
-      border-radius: 12px;
-      border: 1px solid rgba(48,56,61,.92);
-      border-left: 4px solid var(--line);
-      background: rgba(17,20,23,.86);
-    }
-    .fit-item.green { border-left-color: var(--green); }
-    .fit-item.blue { border-left-color: var(--blue); }
-    .fit-item.amber { border-left-color: var(--amber); }
-    .fit-item h3 {
-      color: var(--text);
-      font-size: 17px;
-      line-height: 1.18;
-      margin-bottom: 6px;
-    }
-    .fit-item p {
+    .side-node p {
       color: var(--muted);
-      font-size: 12.8px;
-      line-height: 1.28;
+      font-size: 11.7px;
+      line-height: 1.24;
+    }
+    .tree-takeaway {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(118,214,255,.38);
+      background: rgba(17,20,23,.78);
+    }
+    .tree-takeaway span {
+      color: var(--blue);
+    }
+    .tree-takeaway p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.3;
     }
     .future-entry-slide .scenario-lead {
       margin-top: 16px;
