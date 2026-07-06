@@ -51,7 +51,7 @@ const slides = [
   {
     kind: "benchmark",
     kicker: "FOUNDATION 1",
-    title: "NeuG 已经单机形态下性能最强的图数据引擎",
+    title: "NeuG 是单机形态下性能最强的图数据引擎",
     lead: "一组来自 Mac 单机对比 Neo4j，一组来自 LDBC-300 标准图压力测试。",
     mac: {
       title: "Mac 单机 LDBC SNB Interactive",
