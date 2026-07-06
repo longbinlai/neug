@@ -194,23 +194,37 @@ const slides = [
   {
     kind: "business-search",
     kicker: "业务分析",
-    title: "业务分析｜多轮下钻天然适合图搜索",
-    lead: "每一轮分析都会从当前发现出发，扩展候选维度、保留路径状态、剪掉无效分支；这和图中的 BFS / DFS 分析负载很像，所以适合用图数据库承载。",
-    root: "AI 对就业影响？",
-    levels: [
-      ["扩展层 1", "整体趋势", "职业", "地区"],
-      ["扩展层 2", "计算机职业", "Junior / Senior", "主要州"],
-      ["扩展层 3", "软件开发", "L1 / L2 / L3+", "结论回写"],
+    title: "业务分析｜像图搜索一样推进一次下钻",
+    lead: "上一页把岗位、职业、职级、地区和时间建成业务图；这一页看 Agent 如何围绕一个问题展开：先铺开候选方向，再沿异常分支深挖，最后把路径和证据沉淀下来。",
+    question: "AI 对美国就业的冲击有多大？",
+    rounds: [
+      [
+        "广度铺开",
+        "先看同一层的几个方向",
+        "从根问题同时看招聘总量、职业、职级、地区、时间，判断哪里最值得继续查。",
+        "职业与职级方向出现明显分化，进入下一轮。",
+        "green",
+      ],
+      [
+        "沿分支深挖",
+        "选中异常路径继续钻",
+        "沿 职业 → 计算机相关 → 软件开发 → L1/L2/L3+ 逐层缩小范围，不再平均展开所有方向。",
+        "软件开发 L2 从 280 万降到 145 万，成为需要解释的关键落点。",
+        "blue",
+      ],
+      [
+        "复核并回写",
+        "把结论和证据留在图里",
+        "回到地区和时间维度复核趋势，把查询路径、采样结果和证据链接写回分析图。",
+        "下一次追问可以从这条路径继续，而不是重新组织上下文。",
+        "amber",
+      ],
     ],
+    path: ["根问题", "职业", "计算机相关", "软件开发", "L2", "地区 / 时间复核"],
     graphFit: [
-      ["前沿扩展", "当前候选维度就是下一轮要扩展的前沿节点", "green"],
-      ["路径状态", "每轮发现和中间分组需要沿分析路径保留下来", "blue"],
-      ["分支剪枝", "先用采样判断方向，剪掉低价值分支", "amber"],
-    ],
-    stats: [
-      ["-29.4%", "Junior 岗位记录数下降", "green"],
-      ["-5.8%", "Senior 岗位记录数下降", "blue"],
-      ["280万→145万", "软件开发 L2 接近腰斩", "amber"],
+      ["广度优先", "先铺开同一层候选方向，快速判断哪条线最异常。"],
+      ["深度优先", "选中异常分支后连续下钻，直到落到可解释的人群或岗位。"],
+      ["图数据库适配点", "每一轮的节点、边、证据和中间结果都能作为路径状态保存。"],
     ],
   },
   {
@@ -848,36 +862,45 @@ function renderSlide(slide, index) {
         <h2>${esc(slide.title)}</h2>
         <p class="scenario-lead">${esc(slide.lead)}</p>
         <div class="search-layout">
-          <div class="search-map">
-            <div class="search-root">${esc(slide.root)}</div>
-            <div class="frontier-list">
-              ${slide.levels
+          <div class="search-process">
+            <div class="search-question">
+              <span>分析问题</span>
+              <strong>${esc(slide.question)}</strong>
+            </div>
+            <div class="search-rounds">
+              ${slide.rounds
                 .map(
-                  ([label, ...nodes], i) => `
-                    <div class="frontier-row frontier-${i}">
-                      <span>${esc(label)}</span>
-                      <div class="frontier-nodes">
-                        ${nodes.map((node) => `<strong>${esc(node)}</strong>`).join("")}
+                  ([title, mode, action, outcome, accent], i) => `
+                    <article class="search-round${cls(accent)}">
+                      <em>${String(i + 1).padStart(2, "0")}</em>
+                      <div>
+                        <span>${esc(mode)}</span>
+                        <h3>${esc(title)}</h3>
+                        <p>${esc(action)}</p>
+                        <strong>${esc(outcome)}</strong>
                       </div>
-                    </div>`,
+                    </article>`,
                 )
                 .join("")}
             </div>
           </div>
           <div class="search-proof">
+            <div class="path-panel">
+              <span>本轮被保留的搜索路径</span>
+              <div class="selected-path">
+                ${slide.path.map((node) => `<strong>${esc(node)}</strong>`).join("")}
+              </div>
+            </div>
             <div class="fit-list">
               ${slide.graphFit
                 .map(
-                  ([title, body, accent]) => `
-                    <article class="fit-item${cls(accent)}">
+                  ([title, body]) => `
+                    <article class="fit-item">
                       <h3>${esc(title)}</h3>
                       <p>${esc(body)}</p>
                     </article>`,
                 )
                 .join("")}
-            </div>
-            <div class="search-stats">
-              ${renderStatTiles(slide.stats)}
             </div>
           </div>
         </div>
@@ -3072,7 +3095,7 @@ const html = `<!doctype html>
     }
     .search-layout {
       display: grid;
-      grid-template-columns: 620px 1fr;
+      grid-template-columns: 670px 1fr;
       gap: 36px;
       align-items: stretch;
       margin-top: 24px;
@@ -3083,93 +3106,137 @@ const html = `<!doctype html>
       font-size: 20px;
       line-height: 1.32;
     }
-    .search-map {
+    .search-process {
       min-width: 0;
-      padding: 22px 24px;
-      border-radius: 16px;
-      border: 1px solid rgba(48,56,61,.92);
-      background:
-        radial-gradient(circle at 50% 0%, rgba(155,231,197,.12), transparent 34%),
-        rgba(17,20,23,.78);
-    }
-    .search-root {
       display: grid;
-      place-items: center;
-      min-height: 68px;
-      border-radius: 999px;
-      border: 2px solid rgba(155,231,197,.68);
-      background: rgba(155,231,197,.10);
-      color: var(--text);
-      font-size: 22px;
-      font-weight: 800;
-      line-height: 1.2;
-      text-align: center;
-      margin-bottom: 18px;
-    }
-    .frontier-list {
-      display: grid;
+      grid-template-rows: auto auto;
       gap: 12px;
+      align-content: start;
     }
-    .frontier-row {
-      position: relative;
-      padding: 14px 16px;
+    .search-question {
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(155,231,197,.52);
+      background:
+        radial-gradient(circle at 92% 10%, rgba(155,231,197,.12), transparent 30%),
+        rgba(17,20,23,.86);
+    }
+    .search-question span,
+    .path-panel > span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .search-question strong {
+      display: block;
+      color: var(--text);
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.22;
+    }
+    .search-rounds {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .search-round {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 14px;
+      min-height: 104px;
+      padding: 13px 16px;
       border-radius: 13px;
       border: 1px solid rgba(48,56,61,.92);
-      background: rgba(11,13,14,.52);
+      border-left: 4px solid var(--line);
+      background: rgba(17,20,23,.82);
     }
-    .frontier-row::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: -13px;
-      width: 1px;
-      height: 13px;
-      background: rgba(155,231,197,.34);
+    .search-round.green { border-left-color: var(--green); }
+    .search-round.blue { border-left-color: var(--blue); }
+    .search-round.amber { border-left-color: var(--amber); }
+    .search-round em {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(155,231,197,.46);
+      color: var(--green);
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 820;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
-    .frontier-row > span {
+    .search-round span {
       display: block;
-      color: var(--muted);
-      font-size: 12px;
+      color: var(--blue);
+      font-size: 11px;
       font-weight: 820;
       letter-spacing: .06em;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }
-    .frontier-nodes {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .frontier-nodes strong {
-      display: grid;
-      place-items: center;
-      min-height: 42px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(48,56,61,.95);
-      background: rgba(17,20,23,.9);
+    .search-round h3 {
       color: var(--text);
-      font-size: 14.3px;
-      line-height: 1.16;
-      text-align: center;
+      font-size: 17px;
+      line-height: 1.15;
+      margin-bottom: 6px;
     }
-    .frontier-0 { border-left: 4px solid var(--green); }
-    .frontier-1 { border-left: 4px solid var(--blue); }
-    .frontier-2 { border-left: 4px solid var(--amber); }
+    .search-round p {
+      color: var(--muted);
+      font-size: 13.1px;
+      line-height: 1.27;
+      margin-bottom: 8px;
+    }
+    .search-round strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.24;
+      font-weight: 760;
+    }
     .search-proof {
       display: grid;
       grid-template-rows: auto auto;
-      gap: 14px;
+      gap: 12px;
       align-content: start;
       min-width: 0;
+    }
+    .path-panel {
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(118,214,255,.42);
+      background:
+        radial-gradient(circle at 88% 12%, rgba(118,214,255,.12), transparent 30%),
+        rgba(15,27,33,.68);
+    }
+    .selected-path {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .selected-path strong {
+      position: relative;
+      display: block;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(48,56,61,.95);
+      background: rgba(11,13,14,.64);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.16;
+      text-align: center;
     }
     .fit-list {
       display: grid;
       gap: 10px;
     }
     .fit-item {
-      min-height: 84px;
-      padding: 15px 18px;
+      min-height: 78px;
+      padding: 13px 16px;
       border-radius: 12px;
       border: 1px solid rgba(48,56,61,.92);
       border-left: 4px solid var(--line);
@@ -3180,32 +3247,14 @@ const html = `<!doctype html>
     .fit-item.amber { border-left-color: var(--amber); }
     .fit-item h3 {
       color: var(--text);
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.18;
-      margin-bottom: 7px;
+      margin-bottom: 6px;
     }
     .fit-item p {
       color: var(--muted);
-      font-size: 13.2px;
+      font-size: 12.8px;
       line-height: 1.28;
-    }
-    .business-search-slide .stat-tiles {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-rows: none;
-      gap: 10px;
-    }
-    .business-search-slide .stat-tile {
-      min-height: 86px;
-      padding: 12px 13px;
-      border-radius: 11px;
-    }
-    .business-search-slide .stat-tile strong {
-      font-size: 24px;
-    }
-    .business-search-slide .stat-tile span {
-      margin-top: 7px;
-      font-size: 12.2px;
-      line-height: 1.18;
     }
     .future-entry-slide .scenario-lead {
       margin-top: 16px;
