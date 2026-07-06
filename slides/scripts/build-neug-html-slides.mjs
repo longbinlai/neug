@@ -135,29 +135,27 @@ const slides = [
   {
     kind: "knowledge-update",
     kicker: "组织知识",
-    title: "研发知识库｜增量维护避免知识腐化",
-    lead: "研发知识不是静态文档。代码、接口和设计持续变化，如果 wiki 不跟着更新，Agent 会引用过期概念，最后让知识库变得不可用。",
+    title: "研发知识库｜用增量维护控制知识漂移",
+    lead: "代码和设计一直在变。关键不是反复重写 wiki，而是让每次 PR 都能回答：影响哪些模块、concept 和页面，哪些更新需要人审后入库。",
     delta: [
-      ["代码变更", "新增模块、接口、函数调用"],
-      ["知识漂移", "wiki 摘要和 concept 开始落后"],
-      ["答案失真", "Agent 继续引用过期上下文"],
+      ["PR 变更", "函数、接口、文档和配置产生新关系"],
+      ["影响传播", "相关模块、concept、wiki 页面被标记出来"],
+      ["知识入库", "更新建议经过 review 后合并"],
     ],
     calls: [
-      "1. 解析 PR / release diff，得到变更实体和关系",
-      "2. 用 COPY TEMP 临时载入，不污染正式知识图",
-      "3. 在 NeuG 中分析影响范围：哪些模块、concept、wiki 页受影响",
-      "4. 生成 wiki 更新建议，并保留 source 回溯链路",
-      "5. PR 审查通过后，再写入正式知识库",
+      ["临时图隔离", "PR / release diff 先进入临时图，避免直接改动正式知识库"],
+      ["影响分析", "沿函数、模块、concept 和 wiki 页计算需要维护的范围"],
+      ["审查入库", "生成 wiki / concept 更新建议，保留 source 后再合并"],
     ],
     findings: [
-      ["先隔离", "变更先进入临时图，避免错误更新污染正式知识库", "green"],
-      ["再定位", "沿函数、模块、concept、wiki 页找出需要维护的范围", "blue"],
-      ["后入库", "人审查 diff 后再合并，知识更新变成可控流程", "amber"],
+      ["隔离变更", "新关系先在临时图里验证，正式知识库保持稳定", "green"],
+      ["定位范围", "影响分析直接给出需要更新的模块、概念和页面", "blue"],
+      ["保留回溯", "每次更新都带 source 链路，方便 review 和回滚", "amber"],
     ],
     stats: [
-      ["不维护", "知识会腐化，答案越来越不可信", "green"],
-      ["临时图", "先分析，不污染正式库", "blue"],
-      ["可审查", "wiki / concept diff 后再入库", "amber"],
+      ["PR diff", "最小维护单元", "green"],
+      ["影响范围", "自动标记待更新页面", "blue"],
+      ["source", "答案和更新都可回溯", "amber"],
     ],
   },
   {
@@ -713,8 +711,16 @@ function renderSlide(slide, index) {
                 .join("")}
             </div>
             <div class="call-sequence">
-              <span>NeuG 调用路径</span>
-              ${slide.calls.map((call) => `<code>${esc(call)}</code>`).join("")}
+              <span>NeuG 维护闭环</span>
+              ${slide.calls
+                .map(
+                  ([title, body]) => `
+                    <div class="call-step">
+                      <strong>${esc(title)}</strong>
+                      <p>${esc(body)}</p>
+                    </div>`,
+                )
+                .join("")}
             </div>
           </div>
           <div class="update-right">
@@ -2757,12 +2763,23 @@ const html = `<!doctype html>
       margin-bottom: 8px;
       font-size: 11px;
     }
-    .knowledge-update-slide .call-sequence code {
-      padding: 8px 10px;
-      margin-top: 7px;
+    .knowledge-update-slide .call-step {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: rgba(11,13,14,.64);
+    }
+    .knowledge-update-slide .call-step strong {
+      display: block;
+      color: var(--blue);
+      font-size: 13.5px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .knowledge-update-slide .call-step p {
+      color: var(--muted);
       font-size: 12.3px;
-      line-height: 1.18;
-      white-space: normal;
+      line-height: 1.25;
     }
     .knowledge-update-slide .update-right {
       gap: 12px;

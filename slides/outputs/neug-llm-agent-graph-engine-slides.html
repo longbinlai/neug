@@ -1709,12 +1709,23 @@
       margin-bottom: 8px;
       font-size: 11px;
     }
-    .knowledge-update-slide .call-sequence code {
-      padding: 8px 10px;
-      margin-top: 7px;
+    .knowledge-update-slide .call-step {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: rgba(11,13,14,.64);
+    }
+    .knowledge-update-slide .call-step strong {
+      display: block;
+      color: var(--blue);
+      font-size: 13.5px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .knowledge-update-slide .call-step p {
+      color: var(--muted);
       font-size: 12.3px;
-      line-height: 1.18;
-      white-space: normal;
+      line-height: 1.25;
     }
     .knowledge-update-slide .update-right {
       gap: 12px;
@@ -2976,61 +2987,73 @@
 
       <section class="slide knowledge-update-slide" data-page="08">
         <div class="kicker">组织知识</div>
-        <h2>研发知识库｜增量维护避免知识腐化</h2>
-        <p class="scenario-lead">研发知识不是静态文档。代码、接口和设计持续变化，如果 wiki 不跟着更新，Agent 会引用过期概念，最后让知识库变得不可用。</p>
+        <h2>研发知识库｜用增量维护控制知识漂移</h2>
+        <p class="scenario-lead">代码和设计一直在变。关键不是反复重写 wiki，而是让每次 PR 都能回答：影响哪些模块、concept 和页面，哪些更新需要人审后入库。</p>
         <div class="update-layout">
           <div class="update-left">
             <div class="delta-stack">
               
                     <div class="delta-item">
                       <span>01</span>
-                      <strong>代码变更</strong>
-                      <p>新增模块、接口、函数调用</p>
+                      <strong>PR 变更</strong>
+                      <p>函数、接口、文档和配置产生新关系</p>
                     </div>
                     <div class="delta-item">
                       <span>02</span>
-                      <strong>知识漂移</strong>
-                      <p>wiki 摘要和 concept 开始落后</p>
+                      <strong>影响传播</strong>
+                      <p>相关模块、concept、wiki 页面被标记出来</p>
                     </div>
                     <div class="delta-item">
                       <span>03</span>
-                      <strong>答案失真</strong>
-                      <p>Agent 继续引用过期上下文</p>
+                      <strong>知识入库</strong>
+                      <p>更新建议经过 review 后合并</p>
                     </div>
             </div>
             <div class="call-sequence">
-              <span>NeuG 调用路径</span>
-              <code>1. 解析 PR / release diff，得到变更实体和关系</code><code>2. 用 COPY TEMP 临时载入，不污染正式知识图</code><code>3. 在 NeuG 中分析影响范围：哪些模块、concept、wiki 页受影响</code><code>4. 生成 wiki 更新建议，并保留 source 回溯链路</code><code>5. PR 审查通过后，再写入正式知识库</code>
+              <span>NeuG 维护闭环</span>
+              
+                    <div class="call-step">
+                      <strong>临时图隔离</strong>
+                      <p>PR / release diff 先进入临时图，避免直接改动正式知识库</p>
+                    </div>
+                    <div class="call-step">
+                      <strong>影响分析</strong>
+                      <p>沿函数、模块、concept 和 wiki 页计算需要维护的范围</p>
+                    </div>
+                    <div class="call-step">
+                      <strong>审查入库</strong>
+                      <p>生成 wiki / concept 更新建议，保留 source 后再合并</p>
+                    </div>
             </div>
           </div>
           <div class="update-right">
             <div class="finding-list">
               
                     <article class="finding green">
-                      <h3>先隔离</h3>
-                      <p>变更先进入临时图，避免错误更新污染正式知识库</p>
+                      <h3>隔离变更</h3>
+                      <p>新关系先在临时图里验证，正式知识库保持稳定</p>
                     </article>
                     <article class="finding blue">
-                      <h3>再定位</h3>
-                      <p>沿函数、模块、concept、wiki 页找出需要维护的范围</p>
+                      <h3>定位范围</h3>
+                      <p>影响分析直接给出需要更新的模块、概念和页面</p>
                     </article>
                     <article class="finding amber">
-                      <h3>后入库</h3>
-                      <p>人审查 diff 后再合并，知识更新变成可控流程</p>
+                      <h3>保留回溯</h3>
+                      <p>每次更新都带 source 链路，方便 review 和回滚</p>
                     </article>
             </div>
             <div class="stat-tiles">
         <div class="stat-tile green">
-          <strong>不维护</strong>
-          <span>知识会腐化，答案越来越不可信</span>
+          <strong>PR diff</strong>
+          <span>最小维护单元</span>
         </div>
         <div class="stat-tile blue">
-          <strong>临时图</strong>
-          <span>先分析，不污染正式库</span>
+          <strong>影响范围</strong>
+          <span>自动标记待更新页面</span>
         </div>
         <div class="stat-tile amber">
-          <strong>可审查</strong>
-          <span>wiki / concept diff 后再入库</span>
+          <strong>source</strong>
+          <span>答案和更新都可回溯</span>
         </div></div>
           </div>
         </div>
