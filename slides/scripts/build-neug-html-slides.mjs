@@ -34,17 +34,18 @@ const slides = [
   {
     kind: "hybrid",
     kicker: "POSITIONING",
-    title: "复杂上下文需要具备混合检索能力的图引擎",
-    lead: "Agent 不只是召回文本，还要在关系、语义和关键词之间来回切换。",
+    title: "复杂上下文需要混合检索与图分析协同",
+    lead: "Agent 不只是召回文本，还要在关系扩展、语义匹配、关键词定位和结构判断之间来回切换。",
     actions: [
-      ["沿关系找", "谁参与了这个项目？这个决策来自哪次会议？这个任务依赖哪些代码和文档？", "green"],
-      ["按语义找", "哪些历史讨论和当前问题相似？哪些客户问题表达不同但本质相同？", "blue"],
-      ["按关键词找", "精确定位代码符号、业务字段、产品名、指标名和错误信息。", "amber"],
+      ["沿关系扩展", "谁参与了这个项目？这个决策来自哪次会议？这个任务依赖哪些代码和文档？", "green"],
+      ["混合检索定位", "语义相似用于召回相关材料，关键词用于精确锁定代码符号、字段、产品名和错误信息。", "blue"],
+      ["做结构判断", "哪些节点最关键？哪条路径最能解释问题？大图结果能否先用采样快速估计？", "amber"],
+      ["让 Agent 调用", "关系查询、检索和图分析需要被 CLI / Skill 编排，进入 Agent 的实际执行链路。", "green"],
     ],
     stack: [
       ["Graph Core", "实体、关系、路径与持续更新"],
       ["Vector + Full-text", "语义相似与关键词精确匹配"],
-      ["GDS + Sampling", "重要性、社区、路径分析与大规模时效性"],
+      ["GDS + Sampling", "重要性、社区、路径分析与大规模估计"],
       ["CLI + Skill", "面向 Agent 调用的工具入口"],
     ],
   },
@@ -171,7 +172,7 @@ const slides = [
     kicker: "业务数据分析",
     title: "业务数据分析｜先从招聘与岗位变化切入",
     lead: "业务数据分析覆盖面广，招聘与岗位变化适合作为第一类验证场景：岗位、职业、职级、地区和时间天然相连，NeuG 可以先把这些口径建成业务图。",
-    caseLabel: "NeuGBI 案例问题",
+    caseLabel: "案例问题",
     question: "AI 对美国就业的冲击有多大？",
     modelNodes: [
       ["岗位记录", "招聘数量 / 岗位变化", "green"],
@@ -195,7 +196,7 @@ const slides = [
     kind: "business-search",
     kicker: "业务数据分析",
     title: "业务数据分析｜从开放问题下钻到软件开发 L2",
-    lead: "这页把一次 NeuGBI 分析放进一棵树：先看整体趋势确认数据里有下降信号，再按资历层级定位基础岗位，接着在基础岗位里按职业和岗位继续缩小范围，最终收敛到软件开发 L2。",
+    lead: "这页把一次具体分析放进一棵树：先看整体趋势确认数据里有下降信号，再按资历层级定位基础岗位，接着在基础岗位里按职业和岗位继续缩小范围，最终收敛到软件开发 L2。",
     treeStages: [
       {
         label: "分析入口",
@@ -268,7 +269,7 @@ const slides = [
     lead: "汇报结论：NeuG 不是单点图数据库，而是面向 LLM / Agent 的嵌入式图数据底座。",
     lanes: [
       ["组织知识闭环", "Vector + full-text + GDS + CLI，做企业知识库 / 代码知识库演示验证。", "green"],
-      ["业务数据分析闭环", "数据湖接入 + 采样 + NeuGBI，把招聘/经营分析跑成端到端演示验证。", "blue"],
+      ["业务数据分析闭环", "数据湖接入 + 图建模 + 采样，把招聘/经营分析跑成端到端演示验证。", "blue"],
       ["个人记忆探索", "围绕千问眼镜等设备事件，验证端侧关系图索引价值。", "amber"],
     ],
   },
@@ -278,7 +279,7 @@ const slides = [
     title: "Q&A",
     lead: "欢迎讨论 NeuG 的定位、下一步验证闭环和 Agent 应用接入方式。",
     questions: [
-      ["场景优先级", "组织知识和 NeuGBI 两个闭环，哪个更适合作为第一阶段演示？"],
+      ["场景优先级", "组织知识和业务数据分析两个闭环，哪个更适合作为第一阶段演示？"],
       ["技术验证", "混合检索、图分析、采样和 CLI，哪些能力需要优先打磨成稳定接口？"],
       ["应用接入", "NeuG 作为嵌入式图引擎，应该先进入哪些 Agent runtime 或工具链？"],
     ],
@@ -1332,15 +1333,15 @@ const html = `<!doctype html>
       grid-template-columns: 390px 180px 1fr;
       gap: 28px;
       align-items: center;
-      margin-top: 38px;
+      margin-top: 32px;
     }
     .hybrid-actions {
       display: grid;
-      gap: 14px;
+      gap: 10px;
     }
     .action-card {
-      min-height: 106px;
-      padding: 17px 20px;
+      min-height: 90px;
+      padding: 13px 18px;
       border-radius: 12px;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -1351,14 +1352,14 @@ const html = `<!doctype html>
     .action-card.amber { border-left-color: var(--amber); }
     .action-card h3 {
       color: var(--text);
-      font-size: 20px;
+      font-size: 18.4px;
       line-height: 1.2;
-      margin-bottom: 9px;
+      margin-bottom: 7px;
     }
     .action-card p {
       color: var(--muted);
-      font-size: 15.2px;
-      line-height: 1.34;
+      font-size: 13.7px;
+      line-height: 1.28;
     }
     .hybrid-arrow {
       display: grid;

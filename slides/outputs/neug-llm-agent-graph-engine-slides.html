@@ -272,15 +272,15 @@
       grid-template-columns: 390px 180px 1fr;
       gap: 28px;
       align-items: center;
-      margin-top: 38px;
+      margin-top: 32px;
     }
     .hybrid-actions {
       display: grid;
-      gap: 14px;
+      gap: 10px;
     }
     .action-card {
-      min-height: 106px;
-      padding: 17px 20px;
+      min-height: 90px;
+      padding: 13px 18px;
       border-radius: 12px;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -291,14 +291,14 @@
     .action-card.amber { border-left-color: var(--amber); }
     .action-card h3 {
       color: var(--text);
-      font-size: 20px;
+      font-size: 18.4px;
       line-height: 1.2;
-      margin-bottom: 9px;
+      margin-bottom: 7px;
     }
     .action-card p {
       color: var(--muted);
-      font-size: 15.2px;
-      line-height: 1.34;
+      font-size: 13.7px;
+      line-height: 1.28;
     }
     .hybrid-arrow {
       display: grid;
@@ -2745,22 +2745,26 @@
 
       <section class="slide hybrid-slide" data-page="03">
         <div class="kicker">POSITIONING</div>
-        <h2>复杂上下文需要具备混合检索能力的图引擎</h2>
-        <p class="hybrid-lead">Agent 不只是召回文本，还要在关系、语义和关键词之间来回切换。</p>
+        <h2>复杂上下文需要混合检索与图分析协同</h2>
+        <p class="hybrid-lead">Agent 不只是召回文本，还要在关系扩展、语义匹配、关键词定位和结构判断之间来回切换。</p>
         <div class="hybrid-layout">
           <div class="hybrid-actions">
             
                   <article class="action-card green">
-                    <h3>沿关系找</h3>
+                    <h3>沿关系扩展</h3>
                     <p>谁参与了这个项目？这个决策来自哪次会议？这个任务依赖哪些代码和文档？</p>
                   </article>
                   <article class="action-card blue">
-                    <h3>按语义找</h3>
-                    <p>哪些历史讨论和当前问题相似？哪些客户问题表达不同但本质相同？</p>
+                    <h3>混合检索定位</h3>
+                    <p>语义相似用于召回相关材料，关键词用于精确锁定代码符号、字段、产品名和错误信息。</p>
                   </article>
                   <article class="action-card amber">
-                    <h3>按关键词找</h3>
-                    <p>精确定位代码符号、业务字段、产品名、指标名和错误信息。</p>
+                    <h3>做结构判断</h3>
+                    <p>哪些节点最关键？哪条路径最能解释问题？大图结果能否先用采样快速估计？</p>
+                  </article>
+                  <article class="action-card green">
+                    <h3>让 Agent 调用</h3>
+                    <p>关系查询、检索和图分析需要被 CLI / Skill 编排，进入 Agent 的实际执行链路。</p>
                   </article>
           </div>
           <div class="hybrid-arrow" aria-hidden="true">
@@ -2780,7 +2784,7 @@
                   </div>
                   <div class="stack-layer layer-2">
                     <h3>GDS + Sampling</h3>
-                    <p>重要性、社区、路径分析与大规模时效性</p>
+                    <p>重要性、社区、路径分析与大规模估计</p>
                   </div>
                   <div class="stack-layer layer-3">
                     <h3>CLI + Skill</h3>
@@ -3090,7 +3094,7 @@
         <div class="business-layout">
           <div class="business-left">
             <div class="case-question">
-              <span>NeuGBI 案例问题</span>
+              <span>案例问题</span>
               <strong>AI 对美国就业的冲击有多大？</strong>
             </div>
             <div class="business-paths">
@@ -3161,7 +3165,7 @@
       <section class="slide business-search-slide" data-page="10">
         <div class="kicker">业务数据分析</div>
         <h2>业务数据分析｜从开放问题下钻到软件开发 L2</h2>
-        <p class="scenario-lead">这页把一次 NeuGBI 分析放进一棵树：先看整体趋势确认数据里有下降信号，再按资历层级定位基础岗位，接着在基础岗位里按职业和岗位继续缩小范围，最终收敛到软件开发 L2。</p>
+        <p class="scenario-lead">这页把一次具体分析放进一棵树：先看整体趋势确认数据里有下降信号，再按资历层级定位基础岗位，接着在基础岗位里按职业和岗位继续缩小范围，最终收敛到软件开发 L2。</p>
         <div class="analysis-tree-panel">
           <div class="analysis-tree">
             
@@ -3298,7 +3302,7 @@
                 <article class="roadmap-lane blue">
                   <span>02</span>
                   <h3>业务数据分析闭环</h3>
-                  <p>数据湖接入 + 采样 + NeuGBI，把招聘/经营分析跑成端到端演示验证。</p>
+                  <p>数据湖接入 + 图建模 + 采样，把招聘/经营分析跑成端到端演示验证。</p>
                 </article>
                 <article class="roadmap-lane amber">
                   <span>03</span>
@@ -3323,7 +3327,7 @@
                   <article class="qa-question">
                     <span>01</span>
                     <h3>场景优先级</h3>
-                    <p>组织知识和 NeuGBI 两个闭环，哪个更适合作为第一阶段演示？</p>
+                    <p>组织知识和业务数据分析两个闭环，哪个更适合作为第一阶段演示？</p>
                   </article>
                   <article class="qa-question">
                     <span>02</span>
