@@ -31,6 +31,7 @@
 #                    induced grouping of vertices must match).
 
 import os
+import random
 import sys
 
 import pytest
@@ -215,28 +216,34 @@ def _check_bfs(conn, props, directed, expected):
 def _check_sssp(conn, props, directed, expected):
     source = props["sssp.source-vertex"]
     weight = props.get("sssp.weight-property", "weight")
-    rows = conn.execute(
-        "CALL sssp('g', {{source: '{}', weight: '{}', directed: {}}}) "
-        "YIELD node, distance RETURN node.id, distance;".format(
-            source, weight, str(directed).lower()
-        )
-    )
-    actual = {int(r[0]): float(r[1]) for r in rows}
-
-    def unreachable(val):
-        return val is None or val < 0
-
-    for vid, raw in expected.items():
-        got = actual.get(vid)
-        if raw.lower() == "infinity":
-            assert unreachable(got), "vertex {} expected infinity, got {}".format(
-                vid, got
+    for implementation in ("frontier", "dijkstra", "bmssp"):
+        rows = conn.execute(
+            "CALL sssp('g', {{source: '{}', weight: '{}', directed: {}, "
+            "algo: '{}'}}) YIELD node, distance "
+            "RETURN node.id, distance;".format(
+                source, weight, str(directed).lower(), implementation
             )
-        else:
-            exp = float(raw)
-            assert (
-                got is not None and not unreachable(got) and _floats_close(got, exp)
-            ), "vertex {} expected distance {}, got {}".format(vid, exp, got)
+        )
+        actual = {int(r[0]): float(r[1]) for r in rows}
+
+        def unreachable(val):
+            return val is None or val < 0
+
+        for vid, raw in expected.items():
+            got = actual.get(vid)
+            if raw.lower() == "infinity":
+                assert unreachable(
+                    got
+                ), "{}: vertex {} expected infinity, got {}".format(
+                    implementation, vid, got
+                )
+            else:
+                exp = float(raw)
+                assert (
+                    got is not None and not unreachable(got) and _floats_close(got, exp)
+                ), "{}: vertex {} expected distance {}, got {}".format(
+                    implementation, vid, exp, got
+                )
 
 
 def _check_pr(conn, props, directed, expected):
@@ -363,6 +370,147 @@ def test_graphalytics_conformance(tmp_path, dataset, algorithm):
     try:
         _load_graph(conn, vertices, edges)
         _CHECKERS[algorithm](conn, props, directed, expected)
+    finally:
+        conn.close()
+        db.close()
+
+
+def test_sssp_algo_option_validation(tmp_path):
+    if not _gds_available(tmp_path):
+        pytest.skip("gds extension is not available in this build")
+
+    db = Database(db_path=str(tmp_path / "sssp_algo_options"), mode="w")
+    conn = db.connect()
+    try:
+        _load_graph(conn, [0, 1], [(0, 1, 1.0)])
+        with pytest.raises(RuntimeError, match="algo must be one of"):
+            conn.execute(
+                "CALL sssp('g', {source: '0', algo: 'unknown'}) "
+                "YIELD node, distance RETURN node.id, distance;"
+            )
+        with pytest.raises(RuntimeError, match="BMSSP currently supports"):
+            conn.execute(
+                "CALL sssp('g', {source: '0', algo: 'bmssp'}) "
+                "YIELD node, distance, path RETURN node.id, distance, path;"
+            )
+        with pytest.raises(RuntimeError, match="Frontier SSSP does not support"):
+            conn.execute(
+                "CALL sssp('g', {source: '0', algo: 'frontier'}) "
+                "YIELD node, distance, path RETURN node.id, distance, path;"
+            )
+        # Keep the former name readable for compatibility, but reject
+        # ambiguous calls that specify both option names.
+        list(
+            conn.execute(
+                "CALL sssp('g', {source: '0', implementation: 'bmssp'}) "
+                "YIELD node, distance RETURN node.id, distance;"
+            )
+        )
+        with pytest.raises(RuntimeError, match="cannot both be specified"):
+            conn.execute(
+                "CALL sssp('g', {source: '0', algo: 'bmssp', "
+                "implementation: 'bmssp'}) YIELD node, distance "
+                "RETURN node.id, distance;"
+            )
+    finally:
+        conn.close()
+        db.close()
+
+
+def test_bmssp_randomized_differential(tmp_path):
+    """Compare BMSSP with Dijkstra on a deterministic adversarial graph."""
+    if not _gds_available(tmp_path):
+        pytest.skip("gds extension is not available in this build")
+
+    vertex_count = 64
+    rng = random.Random(20260924)
+    edges = [
+        (v, (v + 1) % vertex_count, float((v % 7) + 1))
+        for v in range(vertex_count)
+    ]
+    for edge_id in range(320):
+        src = rng.randrange(vertex_count)
+        dst = rng.randrange(vertex_count)
+        # Include zero-weight and parallel edges; both stress boundary/tie handling.
+        weight = float(0 if edge_id % 17 == 0 else rng.randrange(1, 100)) / 10.0
+        edges.append((src, dst, weight))
+
+    db = Database(db_path=str(tmp_path / "bmssp_randomized"), mode="w")
+    conn = db.connect()
+    try:
+        _load_graph(conn, list(range(vertex_count)), edges)
+        for directed in (True, False):
+            for source in (0, 17, 63):
+                results = {}
+                variants = (
+                    ("dijkstra", "dijkstra", 1),
+                    ("bmssp_serial", "bmssp", 1),
+                    ("bmssp_parallel", "bmssp", 4),
+                )
+                for name, implementation, concurrency in variants:
+                    rows = conn.execute(
+                        "CALL sssp('g', {{source: '{}', weight: 'weight', "
+                        "directed: {}, algo: '{}', concurrency: {}}}) "
+                        "YIELD node, distance RETURN node.id, distance;".format(
+                            source,
+                            str(directed).lower(),
+                            implementation,
+                            concurrency,
+                        )
+                    )
+                    results[name] = {
+                        int(row[0]): float(row[1]) for row in rows
+                    }
+
+                for name in ("bmssp_serial", "bmssp_parallel"):
+                    assert set(results[name]) == set(results["dijkstra"])
+                    for vertex, expected in results["dijkstra"].items():
+                        actual = results[name][vertex]
+                        assert (actual < 0 and expected < 0) or _floats_close(
+                            actual, expected
+                        ), "{} directed={} source={} vertex={}: {} != {}".format(
+                            name, directed, source, vertex, actual, expected
+                        )
+    finally:
+        conn.close()
+        db.close()
+
+
+def test_bmssp_long_chain_fallback(tmp_path):
+    """Exercise the BMSSP fallback after the bounded frontier probe expires."""
+    if not _gds_available(tmp_path):
+        pytest.skip("gds extension is not available in this build")
+
+    vertex_count = 96
+    edges = [
+        (vertex, vertex + 1, float((vertex % 11) + 1) / 3.0)
+        for vertex in range(vertex_count - 1)
+    ]
+
+    db = Database(db_path=str(tmp_path / "bmssp_long_chain"), mode="w")
+    conn = db.connect()
+    try:
+        _load_graph(conn, list(range(vertex_count)), edges)
+        results = {}
+        variants = (
+            ("dijkstra", "dijkstra", 1),
+            ("bmssp_serial", "bmssp", 1),
+            ("bmssp_parallel", "bmssp", 4),
+        )
+        for name, implementation, concurrency in variants:
+            rows = conn.execute(
+                "CALL sssp('g', {{source: '0', weight: 'weight', "
+                "directed: true, algo: '{}', concurrency: {}}}) "
+                "YIELD node, distance RETURN node.id, distance;".format(
+                    implementation, concurrency
+                )
+            )
+            results[name] = {
+                int(row[0]): float(row[1]) for row in rows
+            }
+
+        assert results["bmssp_serial"] == results["dijkstra"]
+        assert results["bmssp_parallel"] == results["dijkstra"]
     finally:
         conn.close()
         db.close()

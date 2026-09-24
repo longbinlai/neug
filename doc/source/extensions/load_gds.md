@@ -194,6 +194,7 @@ RETURN node, distance;
 | `directed` | BOOL | `false` | Whether to follow edges in their stored direction only |
 | `weight` | STRING | `""` | Edge property name to use as weight (empty = unit weight) |
 | `concurrency` | INT | CPU cores | Number of threads |
+| `algo` | STRING | `"auto"` | `auto`, `frontier`, `dijkstra`, or experimental `bmssp` |
 
 **Output columns:**
 
@@ -208,6 +209,35 @@ RETURN node, distance;
 ```cypher
 CALL sssp('social', {source: '0', weight: 'cost', directed: true})
 RETURN node.fName, distance;
+```
+
+**Implementation selection:** `auto` uses the parallel frontier implementation
+for distance-only queries and Dijkstra when predicates or `path` output are
+requested. Set `algo: 'frontier'` or `algo: 'dijkstra'` to benchmark either
+implementation explicitly. `algo: 'bmssp'` selects
+the experimental adaptive BMSSP backend. It requires finite non-negative
+weights and supports only distance output on an unfiltered projected graph. It
+first runs an optimized sparse/dense frontier probe for at most 32 rounds; this
+phase honors `concurrency` and returns as soon as the labels reach a fixed
+point. If the probe does not converge, its labels are discarded and the
+recursive BMSSP decomposition runs on a lazily built compact CSR, followed by a
+fixed-point verification/repair pass. The fallback is currently
+single-threaded, avoids a per-query constant-degree graph expansion, and does
+not claim the paper's asymptotic bound. Thus the public name is `bmssp`, but a
+low-diameter run may finish entirely in the frontier probe.
+The former `implementation` option remains accepted for compatibility but is
+deprecated; do not specify it together with `algo`.
+
+Set `NEUG_BMSSP_PROFILE=1` in the server or benchmark process to log the probe
+round count and timing. For a fallback run it also logs CSR construction,
+recursive BMSSP, repair time, scanned edges, and repair updates.
+
+```cypher
+CALL sssp('social', {
+  source: '0', weight: 'cost', directed: true, algo: 'bmssp'
+})
+YIELD node, distance
+RETURN node.id, distance;
 ```
 
 **With path return:**

@@ -16,8 +16,11 @@
 
 #include "sssp.h"
 
+#include <algorithm>
+#include <cctype>
 #include <thread>
 
+#include "impl/bmssp_impl.h"
 #include "impl/sssp_impl.h"
 #include "impl/sssp_pred_impl.h"
 #include "utils/option_utils.h"
@@ -54,6 +57,7 @@ struct SSSPInput : public function::CallFuncInputBase {
   std::string source;
   bool directed;
   std::string edge_weight;
+  std::string algo;
   int32_t concurrency;
   bool return_path;
   int32_t node_alias;
@@ -77,12 +81,32 @@ std::unique_ptr<function::CallFuncInputBase> SSSPFunction::bind(
   input->source = get_option_value<std::string>(options, "source", "");
   input->directed = get_option_value<bool>(options, "directed", false);
   input->edge_weight = get_option_value<std::string>(options, "weight", "");
+  const std::string algo = get_option_value<std::string>(options, "algo", "");
+  const std::string legacy_implementation =
+      get_option_value<std::string>(options, "implementation", "");
+  if (!algo.empty() && !legacy_implementation.empty()) {
+    THROW_INVALID_ARGUMENT_EXCEPTION(
+        "SSSP options 'algo' and deprecated 'implementation' cannot both be "
+        "specified");
+  }
+  input->algo = !algo.empty()                    ? algo
+                : !legacy_implementation.empty() ? legacy_implementation
+                                                 : "auto";
+  std::transform(
+      input->algo.begin(), input->algo.end(), input->algo.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (input->algo != "auto" && input->algo != "frontier" &&
+      input->algo != "dijkstra" && input->algo != "bmssp") {
+    THROW_INVALID_ARGUMENT_EXCEPTION(
+        "SSSP algo must be one of: auto, frontier, dijkstra, bmssp");
+  }
   input->concurrency = get_option_value<int32_t>(
       options, "concurrency", std::thread::hardware_concurrency());
   const auto& meta_data = plan.plan(op_idx);
   input->node_alias = -1;
   input->distance_alias = -1;
   input->path_alias = -1;
+  input->return_path = false;
   for (int i = 0; i < meta_data.meta_data_size(); i++) {
     const auto& meta = meta_data.meta_data(i);
     auto type = parse_from_ir_data_type(meta.type());
@@ -113,8 +137,22 @@ execution::Context SSSPFunction::exec(const function::CallFuncInputBase& input,
   }
 
   execution::Context ret;
-  if (sssp_input.return_path || sssp_input.vertex_pred != nullptr ||
-      sssp_input.edge_pred != nullptr) {
+  const bool needs_constrained_impl = sssp_input.return_path ||
+                                      sssp_input.vertex_pred != nullptr ||
+                                      sssp_input.edge_pred != nullptr;
+  if (sssp_input.algo == "bmssp") {
+    if (needs_constrained_impl) {
+      THROW_NOT_SUPPORTED_EXCEPTION(
+          "BMSSP currently supports distance output on unfiltered projected "
+          "graphs only");
+    }
+    BMSSP sssp(graph, sssp_input.vertex_label, sssp_input.edge_label,
+               source_vid, sssp_input.directed, sssp_input.edge_weight,
+               sssp_input.concurrency);
+    sssp.compute();
+    sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias);
+  } else if (sssp_input.algo == "dijkstra" ||
+             (sssp_input.algo == "auto" && needs_constrained_impl)) {
     SSSPPred sssp(graph, sssp_input.vertex_label, sssp_input.edge_label,
                   source_vid, sssp_input.directed, sssp_input.edge_weight,
                   sssp_input.concurrency, sssp_input.vertex_pred.get(),
@@ -123,6 +161,11 @@ execution::Context SSSPFunction::exec(const function::CallFuncInputBase& input,
     sssp.sink(ret, sssp_input.node_alias, sssp_input.distance_alias,
               sssp_input.path_alias);
   } else {
+    if (needs_constrained_impl) {
+      THROW_NOT_SUPPORTED_EXCEPTION(
+          "Frontier SSSP does not support predicates or path output; use "
+          "algo: 'dijkstra'");
+    }
     SSSP sssp(graph, sssp_input.vertex_label, sssp_input.edge_label, source_vid,
               sssp_input.directed, sssp_input.edge_weight,
               sssp_input.concurrency);

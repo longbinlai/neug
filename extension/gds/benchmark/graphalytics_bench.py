@@ -74,7 +74,10 @@ def ensure_csv_alias(src: Path) -> Path:
     return alias
 
 
-def timed_runs(conn, title: str, query: str, runs: int, results: Dict[str, float]) -> None:
+def timed_runs(conn, title: str, query: str, runs: int, warmup_runs: int,
+               results: Dict[str, float]) -> None:
+    for _ in range(warmup_runs):
+        list(conn.execute(query))
     times: List[float] = []
     for i in range(runs):
         t0 = time.time()
@@ -106,6 +109,14 @@ def main():
     ap.add_argument("--cdlp-iterations", type=int, default=10)
     ap.add_argument("--runs", type=int, default=5,
                     help="Repeat each algorithm query; report median time")
+    ap.add_argument("--warmup-runs", type=int, default=1,
+                    help="Unmeasured warmup runs per algorithm (default: 1)")
+    ap.add_argument("--sssp-algos", "--sssp-implementations",
+                    dest="sssp_algos", default="auto",
+                    help="Comma-separated SSSP algorithms: "
+                         "auto,frontier,dijkstra,bmssp")
+    ap.add_argument("--sssp-only", action="store_true",
+                    help="Skip non-SSSP kernels")
     ap.add_argument("--skip-load", action="store_true",
                     help="Reuse existing .db checkpoint; skip COPY FROM")
     args = ap.parse_args()
@@ -149,6 +160,16 @@ def main():
     g = f"g_{dataset.replace('-', '_')}"
     bool_str = "true" if directed else "false"
     c = args.concurrency
+    sssp_algos = [
+        value.strip().lower()
+        for value in args.sssp_algos.split(",")
+        if value.strip()
+    ]
+    unknown = set(sssp_algos) - {"auto", "frontier", "dijkstra", "bmssp"}
+    if unknown:
+        raise SystemExit(
+            "unknown --sssp-algos value(s): " + ", ".join(sorted(unknown))
+        )
     results: Dict[str, float] = {}
     try:
         conn.execute("LOAD gds;")
@@ -176,40 +197,52 @@ def main():
             results["load_rel"] = time.time() - t0
             print(f"[load] rel  {results['load_rel']:.3f}s", flush=True)
 
-        conn.execute(f"CALL project_graph('{g}', ['node'], {{'[node, rel, node]':'' }});")
+        # Projected graphs are persisted in the checkpoint.  Re-projecting on
+        # --skip-load both adds setup noise and fails because the name exists.
+        if not args.skip_load:
+            conn.execute(
+                f"CALL project_graph('{g}', ['node'], "
+                "{'[node, rel, node]':'' });"
+            )
 
-        timed_runs(
-            conn, "BFS",
-            f"CALL BFS('{g}', {{source: {bfs_source}, directed: {bool_str}, concurrency: {c}}}) "
-            "WITH node, distance LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
-        timed_runs(
-            conn, "WCC",
-            f"CALL WCC('{g}', {{concurrency: {c}}}) WITH node, comp LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
-        timed_runs(
-            conn, "PAGERANK",
-            f"CALL page_rank('{g}', {{damping_factor: {args.pr_damping}, "
-            f"max_iterations: {args.pr_iterations}, directed: {bool_str}, concurrency: {c}}}) "
-            "WITH node, rank LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
-        timed_runs(
-            conn, "CDLP",
-            f"CALL cdlp('{g}', {{max_iterations: {args.cdlp_iterations}, concurrency: {c}}}) "
-            "WITH node, label LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
-        timed_runs(
-            conn, "LCC",
-            f"CALL LCC('{g}', {{directed: {bool_str}, concurrency: {c}}}) "
-            "WITH node, lcc LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
+        if not args.sssp_only:
+            timed_runs(
+                conn, "BFS",
+                f"CALL BFS('{g}', {{source: {bfs_source}, directed: {bool_str}, concurrency: {c}}}) "
+                "WITH node, distance LIMIT 1 RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
+            timed_runs(
+                conn, "WCC",
+                f"CALL WCC('{g}', {{concurrency: {c}}}) WITH node, comp LIMIT 1 RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
+            timed_runs(
+                conn, "PAGERANK",
+                f"CALL page_rank('{g}', {{damping_factor: {args.pr_damping}, "
+                f"max_iterations: {args.pr_iterations}, directed: {bool_str}, concurrency: {c}}}) "
+                "WITH node, rank LIMIT 1 RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
+            timed_runs(
+                conn, "CDLP",
+                f"CALL cdlp('{g}', {{max_iterations: {args.cdlp_iterations}, concurrency: {c}}}) "
+                "WITH node, label LIMIT 1 RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
+            timed_runs(
+                conn, "LCC",
+                f"CALL LCC('{g}', {{directed: {bool_str}, concurrency: {c}}}) "
+                "WITH node, lcc LIMIT 1 RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
         sssp_opts = f"source: {sssp_source}, directed: {bool_str}, concurrency: {c}"
         if has_weight:
             sssp_opts += ", weight: 'weight'"
-        timed_runs(
-            conn, "SSSP",
-            f"CALL SSSP('{g}', {{{sssp_opts}}}) WITH node, distance LIMIT 1 RETURN count(*) AS n;",
-            args.runs, results)
+        for algo in sssp_algos:
+            title = f"SSSP-{algo}"
+            timed_runs(
+                conn, title,
+                f"CALL SSSP('{g}', {{{sssp_opts}, algo: "
+                f"'{algo}'}}) YIELD node, distance "
+                "WITH node, distance LIMIT 1 "
+                "RETURN count(*) AS n;",
+                args.runs, args.warmup_runs, results)
     finally:
         conn.close()
         db.close()

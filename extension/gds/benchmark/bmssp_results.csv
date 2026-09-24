@@ -1,0 +1,7 @@
+dataset,vertices,stored_edges,directed,source,concurrency,algorithm,warmup_runs,measured_runs,median_seconds,run_seconds
+datagen-8_0-fb,1706561,107507376,false,6,8,bmssp,1,5,0.150,
+datagen-8_0-fb,1706561,107507376,false,6,8,frontier,1,5,0.157,
+datagen-8_0-fb,1706561,107507376,false,6,8,dijkstra,1,5,2.037,
+datagen-8_1-fb,2072117,134267822,false,6,8,bmssp,1,5,0.237,"0.233;0.237;0.254;0.238;0.236"
+datagen-8_1-fb,2072117,134267822,false,6,8,frontier,1,5,0.274,"0.261;0.274;0.249;0.360;0.387"
+datagen-8_1-fb,2072117,134267822,false,6,8,dijkstra,1,5,3.207,"3.574;3.202;3.252;3.207;3.041"
