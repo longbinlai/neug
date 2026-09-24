@@ -1,5 +1,8 @@
 # NeuG 自适应 BMSSP：实现、正确性与 Graphalytics 性能评估
 
+面向技术站点的叙事版本及配图见
+[`BMSSP_TECHNICAL_BLOG.md`](BMSSP_TECHNICAL_BLOG.md)。
+
 报告日期：2026-09-24
 代码分支：`codex/bmssp-graphalytics-report`
 

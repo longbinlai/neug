@@ -12,9 +12,11 @@
 
 Correctness is covered by `tools/python_bind/tests/test_graphalytics.py` on the official small validation graphs.
 
-The BMSSP implementation report and raw timing rows are available in
-[`BMSSP_TECHNICAL_REPORT.md`](BMSSP_TECHNICAL_REPORT.md) and
-[`bmssp_results.csv`](bmssp_results.csv).
+The publish-ready narrative blog, implementation report, and raw timing rows
+are available in [`BMSSP_TECHNICAL_BLOG.md`](BMSSP_TECHNICAL_BLOG.md),
+[`BMSSP_TECHNICAL_REPORT.md`](BMSSP_TECHNICAL_REPORT.md), and
+[`bmssp_results.csv`](bmssp_results.csv). Blog figures are reproducibly rendered
+by `render_bmssp_blog_charts.py`.
 
 ## Download the report datasets
 
