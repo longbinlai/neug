@@ -1,12 +1,33 @@
 ---
-title: "Dijkstra 还能更快吗？我们在 NeuG 里做了一次 BMSSP 实验"
+title: "从 Lean 证明到真实图评测：我们在 NeuG 里实现了 BMSSP"
 slug: neug-bmssp-breaking-the-sorting-barrier
 date: 2026-09-29
-summary: "从 STOC 2025 的 SSSP 理论突破，到 NeuG 中可调用、可验证的自适应 BMSSP 后端。"
+summary: "Vals AI 用 Lean 证明了一种理论上更快的最短路算法。我们继续追问：把这类理论算法放进真实图数据库，究竟能跑多快？"
 tags: [NeuG, GDS, SSSP, BMSSP, Graph Algorithms, LDBC Graphalytics]
 ---
 
-# Dijkstra 还能更快吗？我们在 NeuG 里做了一次 BMSSP 实验
+# 从 Lean 证明到真实图评测：我们在 NeuG 里实现了 BMSSP
+
+2026 年 9 月 20 日，Vals AI 发布了
+[《A Faster Shortest Path Algorithm》](https://www.vals.ai/blogs/faster-shortest-path-algorithm)。
+他们让 10 个 Claude Opus 5.5 agent 协作搜索新算法，15 小时、733 条消息之后，
+得到了 C-HD，并用 Lean 完成了形式化证明。对一类稀疏图，C-HD 把理论界又向前推了一步。
+
+这项工作不只改进了渐进界，还展示了一种新的研究工作流：agent 寻找算法，
+Lean kernel 检查证明。但 Vals AI 也明确说明，他们没有在大型真实图上跑 benchmark，
+形式化构造的常数也非常大。理论上更快，还不等于已经有了一份跑得更快的工程实现。
+
+于是问题自然落到工程一侧：**理论上更优的 SSSP 算法，能否放进一个真实的
+图数据库，然后用公开数据和现有后端正面比一次？**
+
+要把这个问题落到我们手上的数据，C-HD 并不是最合适的第一站。它当前证明的优势针对的是
+比本文测试数据稀疏得多的图，这项工作的重点也是形式化验证，而不是大图性能实现。
+
+所以，我们把去年 STOC 最佳论文的 BMSSP 选作第一个工程复现对象。它已经过同行评议，
+论文明确给出了伪代码、数据结构和正确性不变量，又直接处理 NeuG 已经支持的有向非负实数权图。
+这让它更适合拿来做第一轮工程实验。
+
+## 去年那篇 STOC 最佳论文
 
 1956 年，Edsger Dijkstra 为 ARMAC 计算机的一次公开演示构思了最短路算法；论文到
 1959 年才发表。1984 年，Fredman 和 Tarjan 在 FOCS 提出 Fibonacci heap，把非负
@@ -284,15 +305,17 @@ NeuG 当前的答案是自适应执行。低直径图先走已有存储结构上
 
 ## 参考资料
 
-1. Ran Duan, Jiayi Mao, Xiao Mao, Xinkai Shu, Longhui Yin,
+1. Vals AI,
+   [A Faster Shortest Path Algorithm](https://www.vals.ai/blogs/faster-shortest-path-algorithm), 2026-09-20.
+2. Ran Duan, Jiayi Mao, Xiao Mao, Xinkai Shu, Longhui Yin,
    [Breaking the Sorting Barrier for Directed Single-Source Shortest Paths](https://arxiv.org/abs/2504.17033), 2025.
-2. [STOC 2025 proceedings version](https://doi.org/10.1145/3717823.3718179), pp. 36–44.
-3. Michael L. Fredman, Robert Endre Tarjan,
+3. [STOC 2025 proceedings version](https://doi.org/10.1145/3717823.3718179), pp. 36–44.
+4. Michael L. Fredman, Robert Endre Tarjan,
    [Fibonacci Heaps and Their Uses in Improved Network Optimization Algorithms](https://doi.org/10.1109/SFCS.1984.715934), FOCS 1984.
-4. Edsger W. Dijkstra,
+5. Edsger W. Dijkstra,
    [A Note on Two Problems in Connexion with Graphs](https://doi.org/10.1007/BF01386390), 1959.
-5. 清华大学，[段然团队获得 STOC 2025 最佳论文奖](https://www.tsinghua.edu.cn/info/1175/118821.htm)。
-6. Ben Brubaker,
+6. 清华大学，[段然团队获得 STOC 2025 最佳论文奖](https://www.tsinghua.edu.cn/info/1175/118821.htm)。
+7. Ben Brubaker,
    [New Method Is the Fastest Way To Find the Best Routes](https://www.quantamagazine.org/new-method-is-the-fastest-way-to-find-the-best-routes-20250806/), Quanta Magazine, 2025-08-06.
-7. Ran Duan, Xiao Mao, Xinkai Shu, Longhui Yin,
+8. Ran Duan, Xiao Mao, Xinkai Shu, Longhui Yin,
    [A Faster Directed Single-Source Shortest Path Algorithm](https://arxiv.org/abs/2602.07868), 2026.
