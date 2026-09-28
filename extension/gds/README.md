@@ -40,10 +40,26 @@ Full documentation with all options and examples: [`doc/source/extensions/load_g
 
 ## Building
 
+For C++ only:
+
 ```bash
 # From repo root
 make cpp-build EXTRA_CMAKE_FLAGS="-DBUILD_EXTENSIONS=gds"
 ```
+
+For the Python benchmark and tests, build the binding and the GDS target, then
+force Python to import the current checkout:
+
+```bash
+# From repo root; replace sysctl with nproc on Linux.
+make python-dev EXTRA_CMAKE_FLAGS="-DBUILD_EXTENSIONS=gds"
+cmake --build build --target neug_gds_extension -j"$(sysctl -n hw.ncpu)"
+export PYTHONPATH="$PWD/tools/python_bind${PYTHONPATH:+:$PYTHONPATH}"
+```
+
+The output is `build/extension/gds/libgds.neug_extension`. Detailed benchmark
+build and reproduction instructions are in
+[`benchmark/README.md`](benchmark/README.md).
 
 ## Testing
 

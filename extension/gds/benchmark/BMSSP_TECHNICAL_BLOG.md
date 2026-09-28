@@ -1,133 +1,114 @@
 ---
-title: "越过 Dijkstra 的排序高墙：我们把 STOC 2025 最佳论文 BMSSP 搬进了 NeuG"
+title: "Dijkstra 还能更快吗？我们在 NeuG 里做了一次 BMSSP 实验"
 slug: neug-bmssp-breaking-the-sorting-barrier
-date: 2026-09-24
-summary: "一项沉寂数十年的理论突破，如何变成图数据库里可调用、可验证、还能比现有 GDS SSSP 更快的工程实现。"
+date: 2026-09-29
+summary: "从 STOC 2025 的 SSSP 理论突破，到 NeuG 中可调用、可验证的自适应 BMSSP 后端。"
 tags: [NeuG, GDS, SSSP, BMSSP, Graph Algorithms, LDBC Graphalytics]
 ---
 
-# 越过 Dijkstra 的排序高墙：我们把 STOC 2025 最佳论文 BMSSP 搬进了 NeuG
+# Dijkstra 还能更快吗？我们在 NeuG 里做了一次 BMSSP 实验
 
-如果一段算法已经写进了几代人的教材，工业界用了近 70 年，并且最好的通用实现早在
-上世纪 80 年代就触碰到了一个看似自然的复杂度边界，那么还能从哪里挤出速度？
+1956 年，Edsger Dijkstra 为 ARMAC 计算机的一次公开演示构思了最短路算法；论文到
+1959 年才发表。1984 年，Fredman 和 Tarjan 在 FOCS 提出 Fibonacci heap，把非负
+实数权重 SSSP 的经典复杂度推进到 $O(m+n\log n)$。此后四十多年，这个界一直是稀疏
+图上的标杆。
 
-2025 年，Ran Duan、Jiayi Mao、Xiao Mao、Xinkai Shu 和 Longhui Yin 给出了一个出人
-意料的答案：**不要把所有顶点排好序。**
-
-他们的论文
+2025 年 4 月，Ran Duan、Jiayi Mao、Xiao Mao、Xinkai Shu 和 Longhui Yin 在论文
 [《Breaking the Sorting Barrier for Directed Single-Source Shortest Paths》](https://arxiv.org/abs/2504.17033)
-第一次在比较—加法模型、任意非负实数边权的有向图上，把单源最短路（SSSP）的时间
-复杂度从 Dijkstra 的 $O(m+n\log n)$ 推进到确定性的
-$O(m\log^{2/3}n)$。论文进入 [STOC 2025 正式论文集](https://doi.org/10.1145/3717823.3718179)，
-并获得 [STOC 2025 Best Paper Award](https://www.sigact.sigact.hosting.acm.org/prizes/best_paper.html)。
+中给出了确定性的 $O(m\log^{2/3}n)$ 算法。它处理比较—加法模型中的有向图，边权可以
+是任意非负实数；对于稀疏图，这是第一次越过 Dijkstra 的
+$O(m+n\log n)$ 界。论文收入 STOC 2025，并获
+[Best Paper Award](https://www.sigact.sigact.hosting.acm.org/prizes/best_paper.html)。
 
-这个结果不只在理论圈里引发讨论。清华大学把它称为“突破有向单源最短路径的排序
-障碍”，[Quanta Magazine](https://www.quantamagazine.org/new-method-is-the-fastest-way-to-find-the-best-routes-20250806/)
-则用一篇长篇报道讲述了这条跨越近 20 年、连接 Dijkstra、Bellman–Ford 和递归偏序的
-研究路径，随后报道又被 [WIRED](https://www.wired.com/story/new-method-is-the-fastest-way-to-find-the-best-routes/)
-转载。
+这项结果在 2025 年引起了不少算法圈以外的关注。清华大学发布了
+[成果介绍](https://www.tsinghua.edu.cn/info/1175/118821.htm)，
+[Quanta Magazine](https://www.quantamagazine.org/new-method-is-the-fastest-way-to-find-the-best-routes-20250806/)
+写了一篇长篇报道，之后又由
+[WIRED](https://www.wired.com/story/new-method-is-the-fastest-way-to-find-the-best-routes/)
+转载。讨论的核心并不是“又造了一个更快的 heap”，而是一个更基础的问题：求最短距离，
+真的需要把所有顶点按距离排好顺序吗？
 
-但论文中的“渐进更快”，能否变成图数据库中的“墙钟时间更短”？这是另一道题。
+我们把论文中的 BMSSP 思路接进了 NeuG GDS extension，并拿两张 LDBC
+Graphalytics `datagen` 图做了验证。结果先放在这里：BMSSP 相比 NeuG 原有 frontier
+后端降低了 4.5% 和 13.5% 的耗时；相比 NeuG 当前的 Dijkstra 后端，分别快 13.6 倍
+和 13.5 倍。
 
-我们在 NeuG GDS extension 中实现了一个实验性的自适应 BMSSP 后端，用 LDBC
-Graphalytics 数据集验证正确性与性能。结果是：在两张千万到亿级存储边的图上，
-BMSSP 相比 NeuG 原有 frontier SSSP 快 **4.5%–13.5%**，相比现有 Dijkstra 后端快
-约 **13.5 倍**。
-
-先别急着把这句话理解成“论文算法在任何图上都快 13 倍”。这篇文章会把理论突破、
-工程取舍、数据结果，以及没有被结果掩盖的限制，一层层拆开。
+这些数字有明确的适用范围。两张图都走了自适应实现的 frontier fast path，没有进入
+递归 fallback；NeuG 当前的 Dijkstra 核心路径也是串行的。因此，这组实验说明的是
+“当前 NeuG 实现之间的差距”，不是对论文理论复杂度的完整复现实验。
 
 ![从 Dijkstra 到突破排序障碍的时间线](images/bmssp/01-history.png)
 
-> 图 1：Dijkstra 在 1956 年提出；1984 年的高级堆结构把通用比较模型下的经典界推进到
-> $O(m+n\log n)$；2023 年先出现任意实数权重无向图上的突破，2025 年的工作进一步
-> 覆盖有向图。2026 年已经出现继续改进该界的后续工作。
+> 图 1：Dijkstra 于 1956 年构思算法、1959 年发表论文；Fibonacci heap 的会议论文
+> 发表于 1984 年。2023 年，随机算法先在无向图上越过排序障碍；2025 年的新算法把结果
+> 扩展到有向图，并且是确定性的。
 
-## 一堵由“顺序”砌成的墙
+## 问题出在“排序”，不只是优先队列
 
-SSSP 的目标很朴素：给定源点 $s$，计算它到图中每个顶点的最短距离。导航、依赖分析、
-网络路由、风控关系图和图数据库分析都会遇到它。
+Dijkstra 的执行过程很熟悉：把候选顶点放进最小优先队列，每次取出距离最小的顶点，
+再松弛它的出边。这个顺序很好用，也带来一个额外结果——顶点按照最短距离依次被确定。
 
-Dijkstra 的力量来自一个极其可靠的贪心顺序：
-
-1. 把已经发现、但尚未最终确定的顶点放进最小优先队列；
-2. 每次取出当前距离最小的顶点；
-3. 松弛它的出边，再把新的候选距离放回队列。
-
-这个过程不仅求出了距离，还顺手给所有顶点生成了按最短距离排列的全序。问题恰恰在
-这里：**SSSP 只要求每个顶点的最终距离，并没有要求算法必须按距离顺序“盖章”。**
-
-在比较模型中，维护这个全序会带来类似排序的 $n\log n$ 成本。2024 年 Robert Tarjan
-等人的工作证明了 Dijkstra 对“distance ordering problem”具有普遍最优性；但正如
-[清华大学对 STOC 2025 成果的说明](https://www.tsinghua.edu.cn/en/info/1245/14266.htm)
-所强调的，这并不等于它对“不要求输出顺序的 SSSP”也最优。2025 年论文抓住的正是
-二者之间的缝隙。
+SSSP 本身只要求源点到每个顶点的距离，并不要求输出这份全序。论文利用的就是这一区别。
+它不再让所有候选顶点争夺“下一个全局最小值”，而是把前沿分成有界的距离层，在层内只
+维护后续计算真正需要的偏序关系。
 
 ![Dijkstra 全序前沿与 BMSSP 偏序分层对比](images/bmssp/02-sorting-barrier.png)
 
-> 图 2：Dijkstra 不断从全局优先队列中取出最近顶点；新算法把前沿分层、分组，只维护
-> 求解真正需要的偏序，不再逐点完成全局排序。
+> 图 2：左侧的 Dijkstra 持续维护全局最小候选；右侧只保留局部探测、pivot 和递归
+> 分层所需的顺序。
 
-## 论文的关键：Bellman–Ford 不是慢，只是不能跑太久
+论文还重新使用了 Bellman–Ford。它不依赖距离排序，但如果在整张图上反复跑到收敛，
+代价会很高。新算法只做有限轮松弛，用这些结果找出 pivots：能够代表较大一片最短路树
+的入口。随后，算法围绕这些 pivots 递归求解 Bounded Multi-Source Shortest Path，
+也就是 BMSSP 子问题。
 
-新算法最反直觉的一点，是重新请回了另一个教科书算法：Bellman–Ford。
+几个关键步骤可以概括为：
 
-Bellman–Ford 不依赖距离排序，沿边反复传播松弛，因此对“边数很少的最短路径”很有效；
-可一旦让它在整张图上跑到底，代价又太高。论文采取的是一种更精细的组合：
+1. 做少量 Bellman–Ford 松弛，得到一片局部可达区域；
+2. 从中筛出 pivots，减少真正进入递归的源点；
+3. 按距离边界分批取出前沿，而不是逐点完成全局排序；
+4. 递归求解每个有界子问题，再合并已经确定的距离。
 
-- 只运行少量 Bellman–Ford 步骤，向前“侦察”；
-- 从被访问的区域中找出 pivots——可以覆盖大量后续最短路径树的代表性顶点；
-- 把距离空间切成有界的层，不要求同一层中的顶点严格按距离依次完成；
-- 递归求解这些 Bounded Multi-Source Shortest Path 子问题；
-- 用支持批量插入与批量取出的数据结构控制每层前沿规模。
+当 $k=\lfloor\log^{1/3}n\rfloor$、
+$t=\lfloor\log^{2/3}n\rfloor$ 时，论文证明总时间为
+$O(m\log^{2/3}n)$。2023 年的无向图结果是随机算法；这篇工作同时给出了有向图突破，
+并成为第一个即使在无向图上也越过该界的确定性算法。
 
-论文把核心递归过程称为 **BMSSP（Bounded Multi-Source Shortest Path）**。我们用
-`bmssp` 作为 NeuG 后端名，而没有把算法叫作“Duan”：前者描述了算法结构，后者只是
-作者姓氏，也无法覆盖五位作者的共同贡献。
+后端之所以叫 `bmssp`，而不是 `duan`，原因也在这里。BMSSP 是论文递归子问题的名称，
+能够说明算法结构；“Duan”只是五位作者中一位作者的姓氏。
 
-当递归参数取 $k=\lfloor\log^{1/3}n\rfloor$、
-$t=\lfloor\log^{2/3}n\rfloor$ 时，论文证明整体时间为
-$O(m\log^{2/3}n)$。这不是把 heap 换得更花哨，而是减少了必须参与全局排序的对象。
+## NeuG 没有逐行翻译论文伪代码
 
-Quanta 的报道用了一个很形象的说法：算法先找到类似“交通干道交叉口”的关键顶点，
-从这些位置向前探索，再回来处理其余前沿。它不总是按距离从小到大访问每个顶点，
-于是绕开了排序障碍。
+理论算法默认可以为图建立专用结构，数据库执行器面对的条件不同。NeuG 已经有 CSR、
+属性列和图投影；如果每次查询都重新构图，额外的内存访问很可能盖过算法收益。论文中的
+数据结构强调渐进界，工程实现还要考虑 cache locality、原子更新和线程调度。
 
-## 从 17 页证明到一个图数据库算子
-
-论文给出的是复杂度突破；数据库实现还要回答另外几件事：
-
-- 图已经以 NeuG 的 CSR 和属性列存储，是否值得为每次查询再转换一次？
-- 理论中的常数度图变换，会不会让工程内存占用和构图成本吞掉收益？
-- 论文的数据结构更关注渐进界，现实中的 cache locality、原子更新和线程调度怎么办？
-- 如果某张图并不适合递归 BMSSP，能否避免为理论结构支付固定成本？
-- 无论走哪条路径，如何保证不会把“部分收敛”的标签交给用户？
-
-我们的答案不是照着伪代码逐行翻译，而是做成一个**自适应后端**。
+我们最终采用了两段式执行路径。
 
 ![NeuG 自适应 BMSSP 执行路径](images/bmssp/03-adaptive-path.png)
 
-> 图 3：低直径图优先使用并行 sparse/dense frontier probe；超过 32 轮仍未收敛时，
-> 丢弃 probe 标签，延迟构建紧凑 CSR，再进入递归 BMSSP 和 fixed-point repair。
+> 图 3：先在 NeuG 投影图上运行有上限的并行 frontier probe。收敛就直接返回；超过
+> 32 轮仍未收敛，才丢弃 probe 标签、构建紧凑 CSR，并进入递归 BMSSP 与修复阶段。
 
-具体来说：
+第一段是最多 32 轮的 sparse/dense frontier probe。活跃顶点少时，从前沿向外推；
+活跃集合超过顶点数的 5% 时，切换为 dense pull。并行路径使用 `concurrency` 指定的
+线程数。probe 收敛后，距离可以直接返回，不需要再物化一份 CSR。
 
-1. **先跑有界 fast path。** 直接访问 NeuG 投影图，以活跃前沿密度在 sparse 和 dense
-   扫描间切换，最多 32 轮，并使用 `concurrency` 指定的线程数。
-2. **收敛就立即返回。** 对低直径图，不物化额外 CSR，也不进入递归结构。
-3. **未收敛才构建 fallback。** probe 中间标签会被丢弃，避免将不完整状态带入后续
-   证明边界；随后构建紧凑 CSR，执行 pivot、frontier 和 base-case 递归。
-4. **最后做 fixed-point repair。** 扫描仍违反松弛条件的边，通过优先队列传播更新，
-   直到不存在可改进距离。
+第二段只在 probe 未收敛时执行。实现会先丢弃 probe 的中间标签，重新初始化状态，
+然后构建紧凑 CSR，执行 pivot、frontier 和 base case 递归。最后的 fixed-point
+repair 会继续传播仍然有效的松弛，直到没有边能够改进距离。
 
-这也是本文结果最需要读者注意的一点：**两张 Graphalytics datagen 图都在 6 轮 probe
-内收敛，性能数字主要反映自适应 fast path，而不是递归 fallback 的吞吐。** BMSSP 的
-价值在这里首先体现为一种策略框架：让容易的图走短路，让困难的图仍有一个正确的递归
-后备路径。
+这层 repair 是正确性保护，也是当前实现与论文算法的重要差异。它保证简化的数据结构
+不会把部分收敛结果交给用户，但也改变了理论工作量，因此我们没有把当前实现描述为
+“复现了论文的渐进复杂度”。
 
-## 接口没有变：仍然是 `sssp`
+两张性能图都在 32 轮 probe 上限前收敛，没有构建 fallback CSR。现有 profile 记录中，
+`datagen-8_1-fb` 用了 6 轮。也就是说，本文的性能数据主要测到的是自适应 fast path，
+递归 BMSSP 目前只有正确性测试，还缺少有代表性的性能样本。
 
-我们没有增加一个独立过程名。用户仍调用 `sssp`，只用较短的 `algo` 选择后端：
+## 调用方式仍然是 `sssp`
+
+这次没有增加独立过程名。调用入口仍是 `sssp`，通过 `algo` 选择后端：
 
 ```cypher
 CALL sssp('social', {
@@ -141,40 +122,45 @@ YIELD node, distance
 RETURN node.id, distance;
 ```
 
-`algo` 可取：
+目前支持四个取值：
 
-- `auto`：默认值；距离查询使用 frontier，需要谓词或 `path` 时使用 Dijkstra；
-- `frontier`：NeuG 原有并行 frontier SSSP；
-- `dijkstra`：带优先队列、支持谓词和路径输出的实现；
-- `bmssp`：本文实验性自适应后端。
+- `auto`：默认值；普通距离查询走 frontier，需要谓词或 `path` 时走 Dijkstra；
+- `frontier`：NeuG 原有的并行 sparse/dense frontier 实现；
+- `dijkstra`：支持谓词和路径输出的优先队列实现；
+- `bmssp`：本文的实验性自适应后端。
 
-旧的 `implementation` 参数仅保留兼容，已经弃用；同时传入 `algo` 和
-`implementation` 会直接报错。
+旧参数 `implementation` 只为兼容已有调用保留，已标记弃用；`algo` 和
+`implementation` 同时出现时会报错。
 
-## 先证明结果可信，再谈快了多少
+## 先把正确性测扎实
 
-最短路算法最危险的性能优化，是在某些边界条件下悄悄留下“看起来很合理”的错误距离。
-因此我们没有只跑几个手工样例，而是建立了四层验证：
+最短路的错误通常不明显：一个顶点少松弛一次，结果仍可能看起来“差不多”。因此测试不只
+比较几个手写样例，而是分成四层。
 
 ![BMSSP 正确性验证证据链](images/bmssp/07-validation.png)
 
-> 图 4：从官方小图、随机差分、强制 fallback，到两百多万顶点的完整参考输出，分别
-> 覆盖接口一致性、边界条件、后备路径和规模化结果。
+> 图 4：小图覆盖接口和官方结果，随机图覆盖边界条件，长链强制进入 fallback，完整
+> `datagen-8_1-fb` 再逐点对照官方 SSSP 输出。
 
-- Graphalytics conformance suite 共 27 项测试通过；SSSP 同时检查 `frontier`、
-  `dijkstra`、`bmssp`。
-- 固定随机种子的 64 顶点图覆盖有向/无向、多个 source、零权边和平行边，BMSSP 的
-  单线程和 4 线程结果均与 Dijkstra 对齐。
-- 一条 96 顶点长链强制 probe 超过 32 轮，确保真正执行 fallback；结果与 Dijkstra
-  完全一致。
-- `datagen-8_1-fb` 的 2,072,117 个顶点全部与官方 SSSP 参考输出逐点比较，最大绝对
-  误差为 `8.88e-16`。
+- `tests/test_graphalytics.py` 整套测试结果为 `27 passed`；其中 SSSP conformance
+  对 `frontier`、`dijkstra`、`bmssp` 使用同一份官方参考输出。
+- 固定随机种子的 64 顶点图覆盖有向/无向、3 个 source、零权边和平行边；BMSSP 的
+  1 线程和 4 线程结果均与 Dijkstra 一致。
+- 96 顶点长链会超过 32 轮 probe 上限，从而真正进入 fallback；串行和并行配置均与
+  Dijkstra 完全一致。
+- `datagen-8_1-fb` 的 2,072,117 个顶点全部逐点比较，最大绝对误差为
+  `8.88e-16`。
 
-## 实测：领先 frontier 4.5%–13.5%，比现有 Dijkstra 快约 13.5 倍
+最后一个误差的量级接近双精度机器精度，符合不同松弛顺序可能产生的舍入差异。
 
-测试机器为 Apple M4 Pro（12 核，48 GB），NeuG 使用 8 线程。每个算法先预热 1 次，
-再计时 5 次并报告中位数。查询完整执行 kernel，但只返回一行计数，避免把数百万行
-结果序列化到 Python；首次 `COPY FROM`、图投影和 checkpoint 不计入算法时间。
+## 性能结果
+
+测试机器是 MacBook Pro（Mac16,8），Apple M4 Pro 12 核（8P + 4E）、48 GB 内存，
+系统为 macOS 15.7.9 arm64。NeuG 使用 8 线程。每个后端预热 1 次，再计时 5 次，报告
+中位数。
+
+查询会完整执行 SSSP kernel，但只返回一行计数，避免把数百万行结果序列化到 Python。
+首次 `COPY FROM`、图投影和 checkpoint 不计入算法时间。
 
 | 数据集 | 顶点数 | NeuG 存储边数 | 方向 | Source |
 |---|---:|---:|---|---:|
@@ -183,8 +169,8 @@ RETURN node.id, distance;
 
 ![两张 Graphalytics 图上的 SSSP 中位耗时](images/bmssp/04-latency.png)
 
-> 图 5：纵轴使用对数坐标。BMSSP 在两张图上的中位耗时分别为 0.150 秒和 0.237 秒；
-> Dijkstra 分别为 2.037 秒和 3.207 秒。
+> 图 5：纵轴为对数坐标。BMSSP 的中位耗时分别是 0.150 秒和 0.237 秒；Dijkstra
+> 分别是 2.037 秒和 3.207 秒。
 
 | 数据集 | BMSSP | Frontier | Dijkstra |
 |---|---:|---:|---:|
@@ -193,62 +179,71 @@ RETURN node.id, distance;
 
 ![BMSSP 相对 frontier 和 Dijkstra 的性能提升](images/bmssp/05-speedup.png)
 
-> 图 6：相比已经很快的 frontier，BMSSP 进一步降低 4.5% 和 13.5% 的延迟；相比
-> NeuG 当前 Dijkstra 后端，加速比分别为 13.6× 和 13.5×。
+> 图 6：按 CSV 中保留到毫秒的中位数计算，BMSSP 相对 frontier 的耗时下降为
+> 4.46% 和 13.50%，图中四舍五入为 4.5% 和 13.5%；Dijkstra/BMSSP 为 13.58×
+> 和 13.53×，图中显示为 13.6× 和 13.5×。
 
-Dijkstra 的对比需要一个限定：三种查询传入相同的 `concurrency: 8`，但 NeuG 当前
-Dijkstra 后端的核心优先队列路径并未像 frontier probe 一样并行化。因此这里的 13.5×
-代表“相对 NeuG 当前可用 Dijkstra 后端”的工程收益，不应外推为对所有并行 Dijkstra
-实现的普遍结论。
+三种查询虽然都传入 `concurrency: 8`，但 NeuG 当前 Dijkstra 后端的核心优先队列没有
+并行化。因此 13 倍的差距不能外推为“BMSSP 普遍比并行 Dijkstra 快 13 倍”。更值得
+观察的是与 frontier 的比较：两者都利用并行图扫描，BMSSP 的 fast path 在第二张图上
+仍少用了约 13.5% 的时间。
 
-第二张图保留了完整的五次原始日志，也让我们看到中位数为什么比“挑一个最好看的
-数字”更可信：
+`datagen-8_1-fb` 保存了五次原始计时：
 
 ![datagen-8_1-fb 五次运行波动](images/bmssp/06-run-stability.png)
 
-> 图 7：BMSSP 五次运行集中在 0.233–0.254 秒；frontier 后两轮升至 0.360 和
-> 0.387 秒；Dijkstra 保持在 3 秒量级。虚线表示各自中位数。
+> 图 7：BMSSP 为 0.233、0.237、0.254、0.238、0.236 秒；frontier 为
+> 0.261、0.274、0.249、0.360、0.387 秒；Dijkstra 为
+> 3.574、3.202、3.252、3.207、3.041 秒。虚线是各自中位数。
 
-## Profile 告诉我们的，不只是“哪里慢”
+第一张图只保留了中位数，没有保存五次逐轮日志，因此原始 CSV 对应的 `run_seconds`
+为空。我们没有用估算值补齐它。
 
-设置 `NEUG_BMSSP_PROFILE=1`，可以记录 probe 轮数与各阶段时间。在
-`datagen-8_1-fb` 上，一次接近冷态的运行得到：
+## Profile 看到的瓶颈
+
+设置 `NEUG_BMSSP_PROFILE=1` 后，实现会记录 probe 轮数和阶段耗时。
+`datagen-8_1-fb` 的一次接近冷态运行输出为：
 
 ```text
 BMSSP probe profile: init_ms=5.17579 rounds=6 concurrency=8 compute_ms=283.403
 ```
 
-这次带日志运行的查询耗时约 0.311 秒，高于关闭额外 profiling 后的热态中位数
-0.237 秒，因此它只用于定位阶段成本，没有混入性能表。
+这次带 profiling 的查询总耗时约 0.311 秒，高于关闭额外日志后的 0.237 秒中位数，
+所以它只用于定位阶段，没有放进性能表。日志同时确认该图没有执行 CSR 构建、递归调用
+和 repair。
 
-更重要的结论是：这两张图没有触发递归 fallback。下一轮优化不该只继续打磨 fast path，
-而应补上能够真正考验论文结构的工作负载：高直径道路网、稀疏有向图、长链和前沿长期
-保持稀疏的图。届时需要分别测量 CSR 构建、pivot 搜索、递归 frontier 和 repair 的成本。
+下一步真正需要测的是高直径道路网、稀疏有向图和长链。这些图会让前沿长时间保持稀疏，
+更可能触发 fallback。到那时才能分别回答 CSR 构建、pivot 搜索、递归 frontier 和
+repair 各占多少时间。
 
-## 这还不是论文复杂度的“工业复现证明”
+## 当前实现还缺什么
 
-我们愿意强调结果，也同样需要强调边界：
+这版后端仍然标记为 experimental，主要有五个原因：
 
-- 当前 `OrderedFrontier` 是“每个顶点保留一个最优 key”的正确性优先实现，不是论文
-  Lemma 3.3 中完整的 block data structure；
-- 没有执行论文的显式常数出度图变换，避免每次查询扩大图；
-- fallback 目前为单线程，线程收益主要来自前置 probe；
-- fixed-point repair 是工程安全网，但它改变了工作量分析；
-- `bmssp` 当前只接受有限、非负权重，只支持无谓词投影图的距离输出；
-- 两张性能图属于同一个 `datagen` 家族，不能代表所有图分布。
+- `OrderedFrontier` 采用“每个顶点保留一个最优 key”的优先队列实现，并不是论文
+  Lemma 3.3 的完整 block data structure；
+- 没有执行论文中的显式常数出度图变换，以免每次查询扩大图；
+- fallback 目前是单线程，并行收益主要来自前置 probe；
+- fixed-point repair 保证正确性，但不满足论文原始的工作量分析；
+- 当前仅支持有限、非负权重，以及无谓词投影图上的距离输出。
 
-因此我们称它为 **experimental adaptive BMSSP backend**，而不宣称已经在 NeuG 中复现
-论文的完整渐进界。
+此外，性能样本只有两张同族 `datagen` 图。它们足以证明这条执行路径值得继续优化，
+不足以说明所有图分布上都会领先。
 
-有意思的是，理论研究本身也没有停下。2026 年 2 月，Duan、Mao、Shu 和 Yin 又发布了
-[后续算法](https://arxiv.org/abs/2602.07868)，进一步改进了 2025 年的界。这恰好验证了
-Tarjan 在 Quanta 报道中的判断：越过排序障碍不是终点，而是把新的搜索空间打开了。
+2026 年 2 月，Duan、Mao、Shu 和 Yin 又发布了
+[后续工作](https://arxiv.org/abs/2602.07868)，继续改进有向 SSSP 的复杂度。排序障碍
+被越过以后，理论界显然还没有停下来；工程实现也一样，还有很长的优化清单。
 
-## 一条命令复现实验
+## 复现实验
 
-两张图的原始 Graphalytics 文件、官方参考输出、SHA-256 清单和 ETL 脚本已经发布到
-NeuG 的公开 OSS。脚本会自动下载、校验、解压，并创建 NeuG `COPY FROM` 使用的
-`.csv` 别名：
+基准脚本本身不会编译 NeuG。先按照
+[benchmark README 的“Build the current GDS extension”一节](README.md#build-the-current-gds-extension)
+编译当前 checkout 的 Python binding 和 `neug_gds_extension`，并设置其中给出的
+`PYTHONPATH`。否则，Python 可能加载环境里已经安装的旧版 `neug`，测到的并不是刚修改的
+代码。
+
+两张 Graphalytics 图、官方参考输出、SHA-256 清单和 ETL 脚本已经放到公开 OSS。
+下载脚本会校验归档、解压，并创建 NeuG `COPY FROM` 使用的 `.csv` 别名：
 
 ```bash
 python3 extension/gds/benchmark/fetch_graphalytics_data.py \
@@ -256,7 +251,7 @@ python3 extension/gds/benchmark/fetch_graphalytics_data.py \
   --output ./graphalytics-data
 ```
 
-然后执行三后端对比：
+然后运行三个后端：
 
 ```bash
 python3 extension/gds/benchmark/graphalytics_bench.py \
@@ -270,35 +265,34 @@ python3 extension/gds/benchmark/graphalytics_bench.py \
   --sssp-algos bmssp,frontier,dijkstra
 ```
 
-代码、报告和复现入口：
+相关文件：
 
 - [NeuG 实现分支](https://github.com/longbinlai/neug/tree/codex/bmssp-graphalytics-report)
-- [技术报告与完整实验口径](BMSSP_TECHNICAL_REPORT.md)
+- [完整技术报告](BMSSP_TECHNICAL_REPORT.md)
 - [原始结果 CSV](bmssp_results.csv)
 - [公开数据与校验清单](https://neug.oss-cn-beijing.aliyuncs.com/datasets/ldbc-graphalytics/SHA256SUMS)
 
-## 最后：理论突破与工程价值之间，需要一座桥
+## 小结
 
-2025 年这篇论文最迷人的地方，不只是把指数里的 `1` 改成了 `2/3`。它提醒我们：一个
-算法做了几十年的“必要步骤”，可能只是某种经典解法的副产品，而不是问题本身的要求。
+这次实验最有价值的地方，不是简单地给 Dijkstra 换掉一个数据结构，而是把论文中的一个
+判断带进了数据库执行器：最短路需要准确距离，但不一定需要完整的距离顺序。
 
-Dijkstra 通过完整的顺序获得确定性；BMSSP 通过分层、pivot 和递归偏序，只购买真正
-需要的顺序。NeuG 的实现又在这个思想之上加了一层工程自适应：短路能解决的图，不强迫
-它进入复杂结构；真正困难的图，仍然保留正确的 fallback。
-
-两张图、几百毫秒的结果不是终局，却足以说明一件事：**这项理论突破已经不只活在复杂度
-公式里。它可以进入数据库接口，接受官方参考结果的检验，并在真实图数据上赢过已有实现。**
-
-下一步，我们会把注意力放到更难的图上——因为一堵高墙被越过之后，最值得看的，永远是
-墙后面还有多远。
+NeuG 当前的答案是自适应执行。低直径图先走已有存储结构上的并行 probe；只有 probe
+处理不了的图，才承担递归 BMSSP 的额外构图成本。现有两张图证明 fast path 有收益，
+96 顶点长链证明 fallback 能给出正确结果。下一阶段则要在真正触发 fallback 的大图上，
+把正确性证据补成性能证据。
 
 ## 参考资料
 
 1. Ran Duan, Jiayi Mao, Xiao Mao, Xinkai Shu, Longhui Yin,
    [Breaking the Sorting Barrier for Directed Single-Source Shortest Paths](https://arxiv.org/abs/2504.17033), 2025.
 2. [STOC 2025 proceedings version](https://doi.org/10.1145/3717823.3718179), pp. 36–44.
-3. ACM SIGACT, [STOC Best Paper Award winners](https://www.sigact.sigact.hosting.acm.org/prizes/best_paper.html).
-4. 清华大学，[段然团队获得 STOC 2025 最佳论文奖](https://www.tsinghua.edu.cn/info/1175/118821.htm)。
-5. Ben Brubaker, [New Method Is the Fastest Way To Find the Best Routes](https://www.quantamagazine.org/new-method-is-the-fastest-way-to-find-the-best-routes-20250806/), Quanta Magazine, 2025-08-06.
-6. Ran Duan, Xiao Mao, Xinkai Shu, Longhui Yin,
+3. Michael L. Fredman, Robert Endre Tarjan,
+   [Fibonacci Heaps and Their Uses in Improved Network Optimization Algorithms](https://doi.org/10.1109/SFCS.1984.715934), FOCS 1984.
+4. Edsger W. Dijkstra,
+   [A Note on Two Problems in Connexion with Graphs](https://doi.org/10.1007/BF01386390), 1959.
+5. 清华大学，[段然团队获得 STOC 2025 最佳论文奖](https://www.tsinghua.edu.cn/info/1175/118821.htm)。
+6. Ben Brubaker,
+   [New Method Is the Fastest Way To Find the Best Routes](https://www.quantamagazine.org/new-method-is-the-fastest-way-to-find-the-best-routes-20250806/), Quanta Magazine, 2025-08-06.
+7. Ran Duan, Xiao Mao, Xinkai Shu, Longhui Yin,
    [A Faster Directed Single-Source Shortest Path Algorithm](https://arxiv.org/abs/2602.07868), 2026.

@@ -154,6 +154,11 @@ BMSSP probe profile: init_ms=5.17579 rounds=6 concurrency=8 compute_ms=283.403
 
 ## 7. 数据获取与复现
 
+基准脚本不会自动编译 NeuG 或 GDS。运行前请先按
+[`README.md`](README.md#build-the-current-gds-extension) 编译当前 checkout 的
+`neug_py_bind` 和 `neug_gds_extension`，并设置 `PYTHONPATH`，确保加载的不是环境中
+已经安装的旧版包。
+
 数据包已发布到公开 OSS，归档内包含 `.properties`、`.v`、`.e` 以及 Graphalytics
 各算法参考输出。下载脚本会校验 SHA-256、解压，并创建 NeuG `COPY FROM` 使用的
 `.csv` 别名：

@@ -3,6 +3,7 @@
 
 import csv
 import math
+import statistics
 from pathlib import Path
 
 import matplotlib
@@ -63,8 +64,14 @@ def configure_fonts():
 
 def save(fig, name):
     OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / (name + ".png"), dpi=200, bbox_inches="tight")
-    fig.savefig(OUT / (name + ".svg"), bbox_inches="tight")
+    png_path = OUT / (name + ".png")
+    svg_path = OUT / (name + ".svg")
+    fig.savefig(png_path, dpi=200, bbox_inches="tight")
+    fig.savefig(svg_path, bbox_inches="tight")
+    # Matplotlib leaves spaces at the end of many SVG path lines. Keep the
+    # generated assets friendly to git diff --check.
+    svg_text = svg_path.read_text()
+    svg_path.write_text("\n".join(line.rstrip() for line in svg_text.splitlines()) + "\n")
     plt.close(fig)
 
 
@@ -91,7 +98,17 @@ def rounded(ax, xy, width, height, text, face, edge="none", size=12):
     return box
 
 
-def arrow(ax, start, end, color=MUTED, width=1.6, style="-|>"):
+def arrow(
+    ax,
+    start,
+    end,
+    color=MUTED,
+    width=1.6,
+    style="-|>",
+    patch_a=None,
+    patch_b=None,
+    connection="arc3,rad=0",
+):
     ax.add_patch(
         FancyArrowPatch(
             start,
@@ -100,7 +117,12 @@ def arrow(ax, start, end, color=MUTED, width=1.6, style="-|>"):
             mutation_scale=14,
             linewidth=width,
             color=color,
-            connectionstyle="arc3,rad=0",
+            connectionstyle=connection,
+            patchA=patch_a,
+            patchB=patch_b,
+            shrinkA=5,
+            shrinkB=5,
+            clip_on=True,
         )
     )
 
@@ -113,7 +135,7 @@ def history():
     ax.set_title("从 Dijkstra 到突破排序障碍：一条跨越近 70 年的时间线", pad=18)
     ax.hlines(0, 0, 4, color=GRID, linewidth=4)
     events = [
-        (1956, "Dijkstra", "逐点按距离定序", BLUE, 0.68),
+        ("1956 / 1959", "Dijkstra", "构思 / 论文发表", BLUE, 0.68),
         (1984, "Fibonacci heap", "$O(m+n\\log n)$", PURPLE, -0.78),
         (2023, "无向图突破", "任意实数权重", CYAN, 0.68),
         (2025, "有向图突破", "$O(m\\log^{2/3}n)$\nSTOC 最佳论文", ORANGE, -0.78),
@@ -132,7 +154,12 @@ def history():
 
 def sorting_barrier():
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.4))
-    fig.suptitle("“排序障碍”究竟挡在哪里？", fontsize=19, fontweight="bold", y=0.98)
+    fig.suptitle(
+        "Dijkstra 排全序，BMSSP 只保留必要偏序",
+        fontsize=19,
+        fontweight="bold",
+        y=0.98,
+    )
     for ax in axes:
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
@@ -140,44 +167,71 @@ def sorting_barrier():
 
     left, right = axes
     left.set_title("Dijkstra：维护一个全局有序前沿", fontsize=14, pad=12)
-    source = (0.12, 0.52)
-    left.add_patch(Circle(source, 0.055, color=BLUE))
+    source = (0.11, 0.52)
+    source_node = Circle(source, 0.055, color=BLUE)
+    left.add_patch(source_node)
     left.text(*source, "s", ha="center", va="center", color=WHITE, fontweight="bold")
     ys = [0.79, 0.66, 0.53, 0.40, 0.27]
     distances = ["1.2", "1.8", "2.6", "3.1", "4.7"]
     for i, (y, distance) in enumerate(zip(ys, distances), 1):
-        arrow(left, (0.18, 0.52), (0.40, y), color=GRID, width=1.2)
-        left.add_patch(Circle((0.44, y), 0.042, color=PALE_BLUE, ec=BLUE, lw=1.4))
-        left.text(0.44, y, "v{}".format(i), ha="center", va="center", fontsize=10)
-        rounded(left, (0.61, y - 0.038), 0.24, 0.076, distance, WHITE, GRID, 11)
-    left.text(0.73, 0.89, "min-priority queue", ha="center", color=MUTED, fontsize=10)
-    left.annotate(
+        vertex = Circle((0.42, y), 0.042, color=PALE_BLUE, ec=BLUE, lw=1.4)
+        left.add_patch(vertex)
+        arrow(
+            left,
+            source,
+            (0.42, y),
+            color=GRID,
+            width=1.2,
+            patch_a=source_node,
+            patch_b=vertex,
+        )
+        left.text(0.42, y, "v{}".format(i), ha="center", va="center", fontsize=10)
+        rounded(left, (0.59, y - 0.038), 0.25, 0.076, distance, WHITE, GRID, 11)
+    left.text(0.715, 0.89, "min-priority queue", ha="center", color=MUTED, fontsize=10)
+    left.text(
+        0.715,
+        0.10,
         "每次取出最近顶点\n≈ 不断维护距离全序",
-        xy=(0.73, 0.25),
-        xytext=(0.73, 0.10),
         ha="center",
+        va="center",
         color=RED,
-        arrowprops={"arrowstyle": "->", "color": RED},
     )
 
     right.set_title(
         "BMSSP 思路：分层、分组，只维护必要的偏序", fontsize=14, pad=12
     )
-    right.add_patch(Circle(source, 0.055, color=ORANGE))
+    source = (0.08, 0.47)
+    source_node = Circle(source, 0.05, color=ORANGE)
+    right.add_patch(source_node)
     right.text(*source, "s", ha="center", va="center", color=WHITE, fontweight="bold")
     layer_specs = [
-        (0.30, 0.13, 0.28, PALE_ORANGE, "局部探测\n少量 Bellman-Ford"),
-        (0.56, 0.13, 0.28, PALE_BLUE, "选出 pivots\n代表性前沿"),
-        (0.82, 0.13, 0.28, PALE_GREEN, "递归求解\n有界距离层"),
+        (0.18, 0.32, 0.21, 0.29, PALE_ORANGE, "局部探测\n少量 Bellman-Ford"),
+        (0.47, 0.32, 0.21, 0.29, PALE_BLUE, "选出 pivots\n缩小递归入口"),
+        (0.76, 0.32, 0.21, 0.29, PALE_GREEN, "递归求解\n有界距离层"),
     ]
-    prev = (0.18, 0.52)
-    for x, y, h, face, label in layer_specs:
-        rounded(right, (x, y), 0.18, h, label, face, "none", 11)
-        arrow(right, prev, (x, y + h / 2), color=MUTED)
-        prev = (x + 0.18, y + h / 2)
-    for x, y, h, face, _ in layer_specs:
-        for dy in (0.55, 0.67, 0.79):
-            right.add_patch(Circle((x + 0.09, dy), 0.026, color=face, ec=ORANGE, lw=1))
+    boxes = []
+    centers = []
+    for x, y, w, h, face, label in layer_specs:
+        boxes.append(rounded(right, (x, y), w, h, label, face, "none", 10.5))
+        centers.append((x + w / 2, y + h / 2))
+    arrow(
+        right,
+        source,
+        centers[0],
+        patch_a=source_node,
+        patch_b=boxes[0],
+    )
+    for index in range(len(boxes) - 1):
+        arrow(
+            right,
+            centers[index],
+            centers[index + 1],
+            patch_a=boxes[index],
+            patch_b=boxes[index + 1],
+        )
+    for x, _, w, _, face, _ in layer_specs:
+        for dy in (0.70, 0.79):
+            right.add_patch(Circle((x + w / 2, dy), 0.024, color=face, ec=ORANGE, lw=1))
     right.text(
         0.55,
         0.91,
@@ -203,9 +257,9 @@ def adaptive_path():
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("NeuG 的自适应 BMSSP：先走快路，必要时再进入递归分解", pad=18)
+    ax.set_title("NeuG 自适应 BMSSP 执行路径", pad=18)
 
-    rounded(
+    projected = rounded(
         ax,
         (0.03, 0.38),
         0.15,
@@ -214,7 +268,7 @@ def adaptive_path():
         PALE_BLUE,
         BLUE,
     )
-    rounded(
+    probe = rounded(
         ax,
         (0.25, 0.38),
         0.20,
@@ -223,9 +277,13 @@ def adaptive_path():
         PALE_ORANGE,
         ORANGE,
     )
-    rounded(ax, (0.54, 0.64), 0.18, 0.20, "已收敛\n直接输出距离", PALE_GREEN, GREEN)
-    rounded(ax, (0.54, 0.17), 0.18, 0.20, "未收敛\n丢弃 probe 标签", "#fff0f0", RED)
-    rounded(
+    completed = rounded(
+        ax, (0.54, 0.64), 0.18, 0.20, "已收敛\n直接输出距离", PALE_GREEN, GREEN
+    )
+    fallback = rounded(
+        ax, (0.54, 0.17), 0.18, 0.20, "未收敛\n丢弃 probe 标签", "#fff0f0", RED
+    )
+    recursive = rounded(
         ax,
         (0.79, 0.17),
         0.18,
@@ -234,7 +292,7 @@ def adaptive_path():
         "#f1edff",
         PURPLE,
     )
-    rounded(
+    sink = rounded(
         ax,
         (0.79, 0.64),
         0.18,
@@ -243,18 +301,65 @@ def adaptive_path():
         PALE_GREEN,
         GREEN,
     )
-    arrow(ax, (0.18, 0.50), (0.25, 0.50))
-    arrow(ax, (0.45, 0.54), (0.54, 0.73), color=GREEN)
-    arrow(ax, (0.45, 0.46), (0.54, 0.27), color=RED)
-    arrow(ax, (0.72, 0.27), (0.79, 0.27), color=PURPLE)
-    arrow(ax, (0.88, 0.37), (0.88, 0.64), color=PURPLE)
-    arrow(ax, (0.72, 0.74), (0.79, 0.74), color=GREEN)
-    ax.text(0.485, 0.69, "fast path", color=GREEN, fontsize=10, ha="center")
-    ax.text(0.485, 0.27, "fallback", color=RED, fontsize=10, ha="center")
+    centers = {
+        "projected": (0.105, 0.50),
+        "probe": (0.35, 0.50),
+        "completed": (0.63, 0.74),
+        "fallback": (0.63, 0.27),
+        "recursive": (0.88, 0.27),
+        "sink": (0.88, 0.74),
+    }
+    arrow(
+        ax,
+        centers["projected"],
+        centers["probe"],
+        patch_a=projected,
+        patch_b=probe,
+    )
+    arrow(
+        ax,
+        centers["probe"],
+        centers["completed"],
+        color=GREEN,
+        patch_a=probe,
+        patch_b=completed,
+    )
+    arrow(
+        ax,
+        centers["probe"],
+        centers["fallback"],
+        color=RED,
+        patch_a=probe,
+        patch_b=fallback,
+    )
+    arrow(
+        ax,
+        centers["fallback"],
+        centers["recursive"],
+        color=PURPLE,
+        patch_a=fallback,
+        patch_b=recursive,
+    )
+    arrow(
+        ax,
+        centers["recursive"],
+        centers["sink"],
+        color=PURPLE,
+        patch_a=recursive,
+        patch_b=sink,
+    )
+    arrow(
+        ax,
+        centers["completed"],
+        centers["sink"],
+        color=GREEN,
+        patch_a=completed,
+        patch_b=sink,
+    )
     ax.text(
         0.50,
         0.04,
-        "两张 Graphalytics datagen 图都在 6 轮内完成，实测没有进入 fallback。",
+        "两张 datagen 图都在 32 轮上限前收敛；8_1 的一次 profile 记录为 6 轮。",
         ha="center",
         color=MUTED,
         fontsize=11,
@@ -264,7 +369,25 @@ def adaptive_path():
 
 def load_results():
     with RESULTS.open(newline="") as stream:
-        return list(csv.DictReader(stream))
+        rows = list(csv.DictReader(stream))
+    if len(rows) != 6:
+        raise ValueError("expected 6 benchmark result rows")
+    for row in rows:
+        measured_runs = int(row["measured_runs"])
+        raw = row["run_seconds"]
+        if not raw:
+            continue
+        runs = [float(value) for value in raw.split(";")]
+        if len(runs) != measured_runs:
+            raise ValueError("run count mismatch for {}".format(row["algorithm"]))
+        # CSV medians are intentionally rounded to milliseconds.
+        if not math.isclose(
+            statistics.median(runs),
+            float(row["median_seconds"]),
+            abs_tol=0.0005,
+        ):
+            raise ValueError("median mismatch for {}".format(row["algorithm"]))
+    return rows
 
 
 def latency():
@@ -303,7 +426,7 @@ def latency():
     ax.set_ylim(0.09, 6)
     ax.set_ylabel("中位耗时（秒，对数坐标）")
     ax.set_xticks(list(x), datasets)
-    ax.set_title("BMSSP 在两张图上都领先 frontier，并显著快于 Dijkstra", pad=16)
+    ax.set_title("两张 Graphalytics 图上的 SSSP 中位耗时", pad=16)
     ax.grid(axis="y", color=GRID, linewidth=0.8, which="both")
     ax.set_axisbelow(True)
     ax.spines[["top", "right"]].set_visible(False)
@@ -329,7 +452,12 @@ def speedup():
         values[(d, "dijkstra")] / values[(d, "bmssp")] for d in datasets
     ]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.7))
-    fig.suptitle("两种基线、两个观察尺度", fontsize=18, fontweight="bold", y=1.02)
+    fig.suptitle(
+        "BMSSP 相对两种 NeuG SSSP 后端",
+        fontsize=18,
+        fontweight="bold",
+        y=1.02,
+    )
     bars = axes[0].barh(datasets, frontier_gain, color=ORANGE, height=0.46)
     axes[0].set_title("相对 frontier 的耗时下降")
     axes[0].set_xlabel("下降比例（%）")
@@ -387,53 +515,45 @@ def stability():
         median = float(row["median_seconds"])
         ax.hlines(median, 1, 5, color=color, linestyle="--", linewidth=1.2, alpha=0.8)
         ax.text(
-            5.08,
+            5.12,
             runs[-1],
-            "{:.3f}s".format(runs[-1]),
+            "{}  {:.3f}s".format(label, runs[-1]),
             va="center",
             color=color,
             fontsize=10,
         )
     ax.set_yscale("log")
+    ax.set_xlim(0.8, 5.75)
     ax.set_xticks(range(1, 6))
     ax.set_xlabel("计时轮次")
     ax.set_ylabel("耗时（秒，对数坐标）")
-    ax.set_title("第二张图的五次运行：BMSSP 更快，也更稳定", pad=16)
+    ax.set_title("datagen-8_1-fb：5 次计时结果", pad=16)
     ax.grid(color=GRID, linewidth=0.8, which="both")
     ax.set_axisbelow(True)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(frameon=False, ncol=3, loc="upper left")
-    ax.text(
-        0.01,
-        0.03,
-        "虚线为中位数；frontier 后两轮出现明显波动。",
-        transform=ax.transAxes,
-        color=MUTED,
-        fontsize=10,
-    )
     fig.tight_layout()
     save(fig, "06-run-stability")
 
 
 def validation():
-    fig, ax = plt.subplots(figsize=(11.5, 4.8))
+    fig, ax = plt.subplots(figsize=(12, 5.2))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("正确性不是一句“结果一样”，而是四层证据链", pad=18)
+    ax.set_title("四层正确性验证", pad=18)
     items = [
-        ("官方小图", "27 项 Graphalytics\nconformance 全通过", BLUE),
-        ("差分测试", "随机图覆盖零权边、平行边\n以及有向 / 无向模式", CYAN),
+        ("官方小图", "测试文件整套 27 项\n全部通过", BLUE),
+        ("差分测试", "64 点随机图：零权边、平行边\n有向 / 无向、3 个 source", CYAN),
         ("fallback", "96 顶点长链\n强制越过 32 轮 probe", PURPLE),
         ("完整参考", "2,072,117 顶点逐点比对\n最大绝对误差 8.88e-16", GREEN),
     ]
     for index, (title, detail, color) in enumerate(items):
-        x = 0.03 + index * 0.245
-        rounded(ax, (x, 0.22), 0.21, 0.52, "", WHITE, GRID)
-        ax.add_patch(Circle((x + 0.105, 0.63), 0.055, color=color))
+        x = 0.025 + index * 0.2475
+        rounded(ax, (x, 0.23), 0.215, 0.52, "", WHITE, GRID)
+        ax.add_patch(Circle((x + 0.1075, 0.64), 0.052, color=color))
         ax.text(
-            x + 0.105,
-            0.63,
+            x + 0.1075,
+            0.64,
             str(index + 1),
             ha="center",
             va="center",
@@ -442,8 +562,8 @@ def validation():
             fontweight="bold",
         )
         ax.text(
-            x + 0.105,
-            0.49,
+            x + 0.1075,
+            0.50,
             title,
             ha="center",
             va="center",
@@ -452,14 +572,14 @@ def validation():
             fontsize=13,
         )
         ax.text(
-            x + 0.105,
-            0.34,
+            x + 0.1075,
+            0.35,
             detail,
             ha="center",
             va="center",
             color=MUTED,
-            fontsize=9.5,
-            linespacing=1.5,
+            fontsize=9.2,
+            linespacing=1.4,
         )
     ax.text(
         0.5,

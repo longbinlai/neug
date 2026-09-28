@@ -18,6 +18,36 @@ are available in [`BMSSP_TECHNICAL_BLOG.md`](BMSSP_TECHNICAL_BLOG.md),
 [`bmssp_results.csv`](bmssp_results.csv). Blog figures are reproducibly rendered
 by `render_bmssp_blog_charts.py`.
 
+## Build the current GDS extension
+
+The benchmark script does not compile NeuG or GDS. Build the Python binding and
+the current checkout of the extension before running it. From the repository
+root on macOS:
+
+```bash
+make python-dev EXTRA_CMAKE_FLAGS="-DBUILD_EXTENSIONS=gds"
+cmake --build build --target neug_gds_extension -j"$(sysctl -n hw.ncpu)"
+export PYTHONPATH="$PWD/tools/python_bind${PYTHONPATH:+:$PYTHONPATH}"
+```
+
+On Linux, use `-j"$(nproc)"` in the second command. The expected extension
+artifact is `build/extension/gds/libgds.neug_extension`. Setting `PYTHONPATH`
+as shown is important: it makes the benchmark load the binding and extension
+from this checkout instead of a previously installed `neug` package.
+
+After changing C++ code, rebuild both targets before benchmarking:
+
+```bash
+cmake --build build --target neug_py_bind -j"$(sysctl -n hw.ncpu)"
+cmake --build build --target neug_gds_extension -j"$(sysctl -n hw.ncpu)"
+```
+
+Verify that the freshly built extension can be loaded:
+
+```bash
+python3 -m pytest -q tools/python_bind/tests/test_graphalytics.py
+```
+
 ## Download the report datasets
 
 The two report datasets are mirrored as verified archives in the public NeuG
@@ -34,7 +64,7 @@ The script requires `zstd` and `tar`. The resulting data root is
 
 ## Example
 
-From the NeuG repository root (with GDS extension already built):
+From the NeuG repository root, after completing the build steps above:
 
 ```bash
 export GRAPHALYTICS_DATA_ROOT=/path/to/ldbc-graphalytics/datasets
