@@ -33,6 +33,12 @@ PALE_GREEN = "#eaf8f0"
 PALE_ORANGE = "#fff2e3"
 WHITE = "#ffffff"
 
+# Colorblind-safe performance palette. Keep the mapping stable across figures:
+# BMSSP = teal, Frontier = blue, Dijkstra = coral.
+BMSSP_COLOR = "#148A78"
+FRONTIER_COLOR = "#3B6FB6"
+DIJKSTRA_COLOR = "#CF5C63"
+
 
 def configure_fonts():
     candidates = [
@@ -394,7 +400,7 @@ def latency():
     rows = load_results()
     datasets = ["datagen-8_0-fb", "datagen-8_1-fb"]
     algorithms = ["bmssp", "frontier", "dijkstra"]
-    colors = [ORANGE, BLUE, MUTED]
+    colors = [BMSSP_COLOR, FRONTIER_COLOR, DIJKSTRA_COLOR]
     values = {
         (row["dataset"], row["algorithm"]): float(row["median_seconds"])
         for row in rows
@@ -458,7 +464,9 @@ def speedup():
         fontweight="bold",
         y=1.02,
     )
-    bars = axes[0].barh(datasets, frontier_gain, color=ORANGE, height=0.46)
+    bars = axes[0].barh(
+        datasets, frontier_gain, color=FRONTIER_COLOR, height=0.46
+    )
     axes[0].set_title("相对 frontier 的耗时下降")
     axes[0].set_xlabel("下降比例（%）")
     axes[0].set_xlim(0, 16)
@@ -470,7 +478,9 @@ def speedup():
             va="center",
         )
 
-    bars = axes[1].barh(datasets, dijkstra_speedup, color=GREEN, height=0.46)
+    bars = axes[1].barh(
+        datasets, dijkstra_speedup, color=DIJKSTRA_COLOR, height=0.46
+    )
     axes[1].set_title("相对 Dijkstra 的加速比")
     axes[1].set_xlabel("倍数（×）")
     axes[1].set_xlim(0, 15)
@@ -495,7 +505,12 @@ def stability():
     rows = load_results()
     selected = [row for row in rows if row["dataset"] == "datagen-8_1-fb"]
     fig, ax = plt.subplots(figsize=(10.8, 5.1))
-    mapping = {"bmssp": ORANGE, "frontier": BLUE, "dijkstra": MUTED}
+    mapping = {
+        "bmssp": BMSSP_COLOR,
+        "frontier": FRONTIER_COLOR,
+        "dijkstra": DIJKSTRA_COLOR,
+    }
+    markers = {"bmssp": "o", "frontier": "s", "dijkstra": "^"}
     for row in selected:
         runs = [float(item) for item in row["run_seconds"].split(";")]
         color = mapping[row["algorithm"]]
@@ -507,7 +522,7 @@ def stability():
         ax.plot(
             range(1, 6),
             runs,
-            marker="o",
+            marker=markers[row["algorithm"]],
             color=color,
             linewidth=2.2,
             label=label,
