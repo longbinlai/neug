@@ -38,24 +38,22 @@ Suggested image: `public/images/blog/bmssp-shortest-path/banner-v2.png`
 
 Submit the article as a URL submission.
 
-Suggested title:
+Use the article title:
 
-> Implementing BMSSP in NeuG and benchmarking it on Graphalytics
+> From Theory to Real-Graph Benchmarks: Implementing BMSSP in NeuG
 
-Suggested first comment:
+Optional opening comment:
 
-> Author here. We implemented BMSSP from the STOC 2025 Best Paper as a NeuG GDS backend and compared it with our existing frontier and Dijkstra backends on two public Graphalytics graphs.
+> We started this after reading Vals AI's post about a formally verified faster shortest-path algorithm. It made us wonder how much of that theoretical progress survives contact with a graph database. C-HD was not a natural fit for the graphs we had on hand, so we went back to BMSSP, the 2025 STOC Best Paper result, and implemented that in NeuG.
 >
-> The median latency was 4.5% and 13.5% lower than frontier, and about 13.5x lower than Dijkstra. We checked correctness with the official reference output, differential tests on weighted edge cases, a fallback-path test, and a full comparison covering 2,072,117 vertices.
+> The less tidy result is that both benchmark graphs converged during the parallel frontier probe, before the recursive BMSSP fallback was needed. The adaptive implementation was still 4.5–13.5% faster than our existing frontier backend and about 13.5x faster than Dijkstra, but those numbers describe the hybrid path as a whole, not a clean win for the recursive path by itself.
 >
-> This is still a deliberately small first benchmark: both large graphs come from the same generator, and the current numbers measure the algorithm after graph projection rather than every possible end-to-end ingestion cost.
->
-> I would value feedback on three questions: which real-world weighted graph would be most informative next; whether compact-CSR construction should be included in the primary end-to-end number; and which frontier-style SSSP implementation would make the strongest additional baseline.
+> We forced the fallback in correctness tests, but we do not yet have a large real-world graph where it is the interesting performance path. If you work on weighted SSSP, what graph would you use to test that case?
 
 Posting notes:
 
-- Use the article's actual title or the neutral title above; avoid performance superlatives.
-- Disclose the author relationship in the first comment.
+- Keep the article's actual title; avoid adding performance claims to it.
+- The opening comment is optional. If used, writing "we implemented" already makes the relationship clear without a formulaic disclosure.
 - Do not ask colleagues or social followers to upvote or coordinate comments.
 - Answer technical criticism directly and update the article if someone finds a reproducibility issue.
 - Do not repost the same link after a weak launch merely to obtain another front-page attempt.
