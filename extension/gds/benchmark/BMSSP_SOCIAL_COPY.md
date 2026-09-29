@@ -44,7 +44,7 @@ Use the article title:
 
 Optional opening comment:
 
-> We started this after reading Vals AI's post about a formally verified faster shortest-path algorithm. It made us wonder how much of that theoretical progress survives contact with a graph database. C-HD was not a natural fit for the graphs we had on hand, so we went back to BMSSP, the 2025 STOC Best Paper result, and implemented that in NeuG.
+> We started this after reading Vals AI's post about a formally verified faster shortest-path algorithm. It made us wonder how much of that theoretical progress survives contact with a graph database. We could not make a meaningful C-HD benchmark out of the Graphalytics data we already had, so we went back to BMSSP, the 2025 STOC Best Paper result, and implemented that in NeuG.
 >
 > The less tidy result is that both benchmark graphs converged during the parallel frontier probe, before the recursive BMSSP fallback was needed. The adaptive implementation was still 4.5–13.5% faster than our existing frontier backend and about 13.5x faster than Dijkstra, but those numbers describe the hybrid path as a whole, not a clean win for the recursive path by itself.
 >
