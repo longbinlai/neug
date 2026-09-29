@@ -1,12 +1,12 @@
 ---
-title: "从 Lean 证明到真实图评测：我们在 NeuG 里实现了 BMSSP"
+title: "从理论到真实图评测：我们在 NeuG 里实现了 BMSSP"
 slug: neug-bmssp-breaking-the-sorting-barrier
 date: 2026-09-29
-summary: "Vals AI 用 Lean 证明了一种理论上更快的最短路算法。我们继续追问：把这类理论算法放进真实图数据库，究竟能跑多快？"
+summary: "受近期最短路理论进展启发，我们在 NeuG 中实现了 STOC 2025 最佳论文提出的 BMSSP，并在公开 Graphalytics 数据上与 frontier 和 Dijkstra 进行了实测。"
 tags: [NeuG, GDS, SSSP, BMSSP, Graph Algorithms, LDBC Graphalytics]
 ---
 
-# 从 Lean 证明到真实图评测：我们在 NeuG 里实现了 BMSSP
+# 从理论到真实图评测：我们在 NeuG 里实现了 BMSSP
 
 2026 年 9 月 20 日，Vals AI 发布了
 [《A Faster Shortest Path Algorithm》](https://www.vals.ai/blogs/faster-shortest-path-algorithm)。
